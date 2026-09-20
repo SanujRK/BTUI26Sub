@@ -1,0 +1,14 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import TicketsPage from "../../components/TicketsPage";
+---
+
+<Layout title="Tickets — School Events Hub">
+  <section class="mb-8">
+    <h1 class="text-3xl font-black tracking-tight">Tickets</h1>
+    <p class="mt-2 text-slate-400">
+      Grab a ticket for ticketed events; each one comes with a scannable QR code.
+    </p>
+  </section>
+  <TicketsPage client:load />
+</Layout>

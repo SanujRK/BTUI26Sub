@@ -270,3 +270,44 @@ export async function getMyRegistrations(): Promise<MyRegistration[]> {
       created_at: r.created_at,
     }));
 }
+
+export type TicketView = {
+  id: string;
+  event_id: string;
+  title: string;
+  category: string;
+  venue: string;
+  starts_at: string | null;
+  created_at: string;
+};
+
+export async function getMyTickets(): Promise<TicketView[]> {
+  if (!isSupabaseConfigured) return [];
+  const client = requireClient();
+  const { data, error } = await client
+    .from("tickets")
+    .select("id, created_at, events!inner(id, title, category, venue, starts_at)")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return ((data ?? []) as Array<{
+    id: string;
+    created_at: string;
+    events: {
+      id: string;
+      title: string;
+      category: string;
+      venue: string;
+      starts_at: string | null;
+    } | null;
+  }>)
+    .filter((t) => !!t.events)
+    .map((t) => ({
+      id: t.id,
+      event_id: t.events!.id,
+      title: t.events!.title,
+      category: t.events!.category,
+      venue: t.events!.venue,
+      starts_at: t.events!.starts_at,
+      created_at: t.created_at,
+    }));
+}
