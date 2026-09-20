@@ -43,6 +43,7 @@ export default function EventCalendar() {
   const [modal, setModal] = useState<ModalState | null>(null);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
+  const [flash, setFlash] = useState("");
 
   const isMobile =
     typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
@@ -113,6 +114,7 @@ export default function EventCalendar() {
     eventId: string | null
   ) => {
     await createCustomEvent({ title, color, starts_at: start, event_id: eventId });
+    setFlash("");
     await refresh();
     setModal(null);
   };
@@ -158,6 +160,14 @@ export default function EventCalendar() {
 
   return (
     <div className="flex flex-col gap-4">
+      {flash && (
+        <p
+          onClick={() => setFlash("")}
+          className="cursor-pointer rounded-lg bg-rose-400/10 px-3 py-2 text-sm text-rose-300 ring-1 ring-rose-400/30"
+        >
+          {flash} <span className="text-rose-400/70">(click to dismiss)</span>
+        </p>
+      )}
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex gap-2">
           {(["dayGridMonth", "listMonth"] as const).map((v) => (
@@ -243,7 +253,7 @@ export default function EventCalendar() {
                 PALETTE[0],
                 new Date(info.dateStr + "T00:00:00").toISOString(),
                 eventId
-              ).catch((err) => setError(err.message));
+              ).catch((err) => setFlash(err.message));
               info.event.remove();
             }}
             eventDrop={(info) => {
@@ -414,17 +424,20 @@ function CustomModal({
   const [color, setColor] = useState(defaultColor);
   const [start, setStart] = useState(defaultStart.slice(0, 10));
   const [busy, setBusy] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const submit = async () => {
     if (!title.trim()) return;
     setBusy(true);
+    setErrorMsg("");
     try {
       await onSave(
         title.trim(),
         color,
         new Date(start.slice(0, 10) + "T00:00:00").toISOString()
       );
-    } catch {
+    } catch (e) {
+      setErrorMsg((e as Error)?.message ?? "Save failed. Try again.");
       setBusy(false);
     }
   };
@@ -476,6 +489,11 @@ function CustomModal({
             ))}
           </div>
         </div>
+        {errorMsg && (
+          <p className="mt-4 rounded-lg bg-rose-400/10 px-3 py-2 text-sm text-rose-300 ring-1 ring-rose-400/30">
+            {errorMsg}
+          </p>
+        )}
         <div className="mt-6 flex justify-end gap-2">
           {onDelete && (
             <button
