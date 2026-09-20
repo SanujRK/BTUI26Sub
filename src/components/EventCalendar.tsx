@@ -158,6 +158,13 @@ export default function EventCalendar() {
       extendedProps: { isCustom: true, customId: c.id },
     }));
 
+  const pinnedEventIds = useMemo(
+    () => new Set(customEvents.map((c) => c.event_id).filter((id): id is string => !!id)),
+    [customEvents]
+  );
+
+  const poolToShow = pool.filter((t) => !pinnedEventIds.has(t.event_id));
+
   return (
     <div className="flex flex-col gap-4">
       {flash && (
@@ -245,11 +252,10 @@ export default function EventCalendar() {
               setModal({ kind: "create", start: new Date(info.startStr + "T00:00:00").toISOString() });
             }}
             eventReceive={(info) => {
-              const el = info.draggedEl;
-              const eventId = el.dataset.eventId;
+              const eventId = info.event.extendedProps.eventId as string | undefined;
               if (!eventId) return;
               saveCustom(
-                el.dataset.title ?? "Reminder",
+                (info.event.extendedProps.title as string) ?? "Reminder",
                 PALETTE[0],
                 new Date(info.dateStr + "T00:00:00").toISOString(),
                 eventId
@@ -290,9 +296,9 @@ export default function EventCalendar() {
             <p className="mt-3 text-sm text-slate-500">
               Sign in to pin date-free events to your calendar.
             </p>
-          ) : pool.length === 0 ? (
+          ) : poolToShow.length === 0 ? (
             <p className="mt-3 text-sm text-slate-500">
-              TBD events you register for will appear here.
+              No unpinned date-free events. Register for a TBD event to pin it.
             </p>
           ) : (
             <p className="mt-1 text-xs text-slate-500">
@@ -300,20 +306,19 @@ export default function EventCalendar() {
             </p>
           )}
           <div className="mt-3 space-y-2">
-            {pool.map((t) => (
+            {poolToShow.map((t) => (
               <div
                 key={t.event_id}
                 ref={(node) => {
                   if (!node || poolDraggables.current.has(t.event_id)) return;
                   poolDraggables.current.set(
                     t.event_id,
-                    new Draggable(node, { eventData: { title: t.title } })
+                    new Draggable(node, {
+                      eventData: { title: t.title, eventId: t.event_id },
+                    })
                   );
                 }}
                 className="fc-event cursor-grab select-none rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-white/10"
-                data-event={JSON.stringify({ title: t.title })}
-                data-event-id={t.event_id}
-                data-title={t.title}
                 onClick={() => {
                   if (!user) return;
                   setModal({
