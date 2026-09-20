@@ -57,3 +57,83 @@ export async function getAnnouncements(): Promise<Announcement[]> {
   if (error) throw error;
   return data ?? [];
 }
+
+export type CustomEventRow = {
+  id: string;
+  title: string;
+  color: string;
+  starts_at: string;
+  event_id: string | null;
+  notified_at: string | null;
+  created_at: string;
+};
+
+export type TbdRegistration = {
+  event_id: string;
+  title: string;
+};
+
+export async function getCustomEvents(): Promise<CustomEventRow[]> {
+  if (!isSupabaseConfigured) return [];
+  const client = requireClient();
+  const { data, error } = await client
+    .from("custom_events")
+    .select("id, title, color, starts_at, event_id, notified_at, created_at")
+    .order("starts_at", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getTbdPool(): Promise<TbdRegistration[]> {
+  if (!isSupabaseConfigured) return [];
+  const client = requireClient();
+  const { data, error } = await client
+    .from("registrations")
+    .select("event_id, events!inner(id, title, starts_at, ends_at, category)");
+  if (error) throw error;
+  const registrations = (data ?? []) as {
+    event_id: string;
+    events: { id: string; title: string; starts_at: string | null } | null;
+  }[];
+  return registrations
+    .map((r) => r.events)
+    .filter((e): e is { id: string; title: string; starts_at: string | null } => !!e)
+    .filter((e) => !e.starts_at)
+    .map((e) => ({ event_id: e.id, title: e.title }));
+}
+
+export async function createCustomEvent(input: {
+  title: string;
+  color: string;
+  starts_at: string;
+  event_id?: string | null;
+}): Promise<void> {
+  const client = requireClient();
+  const { error } = await client.from("custom_events").insert({
+    title: input.title,
+    color: input.color,
+    starts_at: input.starts_at,
+    event_id: input.event_id ?? null,
+  });
+  if (error) throw error;
+}
+
+export async function updateCustomEvent(
+  id: string,
+  patch: Partial<{
+    title: string;
+    color: string;
+    starts_at: string;
+    notified_at: string;
+  }>
+): Promise<void> {
+  const client = requireClient();
+  const { error } = await client.from("custom_events").update(patch).eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteCustomEvent(id: string): Promise<void> {
+  const client = requireClient();
+  const { error } = await client.from("custom_events").delete().eq("id", id);
+  if (error) throw error;
+}
