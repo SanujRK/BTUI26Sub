@@ -29,6 +29,14 @@ export type Announcement = {
 const notConfigured = () =>
   "Supabase is not configured. Set PUBLIC_SUPABASE_URL and PUBLIC_SUPABASE_ANON_KEY.";
 
+async function currentUserId(): Promise<string | null> {
+  if (!isSupabaseConfigured) return null;
+  const {
+    data: { session },
+  } = await requireClient().auth.getSession();
+  return session?.user?.id ?? null;
+}
+
 export async function getEvents(): Promise<EventView[]> {
   const client = requireClient();
   const { data, error } = await client.rpc("get_public_events");
@@ -109,7 +117,10 @@ export async function createCustomEvent(input: {
   event_id?: string | null;
 }): Promise<void> {
   const client = requireClient();
+  const userId = await currentUserId();
+  if (!userId) throw new Error("Not signed in.");
   const { error } = await client.from("custom_events").insert({
+    user_id: userId,
     title: input.title,
     color: input.color,
     starts_at: input.starts_at,

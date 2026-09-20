@@ -2,9 +2,11 @@
 import Layout from "../layouts/Layout.astro";
 import HomeFeed from "../components/HomeFeed";
 import HomeRegistrations from "../components/HomeRegistrations";
+import RedirectIfSignedIn from "../components/RedirectIfSignedIn";
 ---
 
 <Layout title="School Events Hub">
+  <RedirectIfSignedIn client:load />
   <section class="py-6 text-center">
     <h1 class="mx-auto max-w-2xl text-4xl font-black tracking-tight sm:text-5xl">
       Every school event.

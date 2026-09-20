@@ -1,6 +1,7 @@
 ---
 import "../styles/global.css";
 import AuthNav from "../components/AuthNav";
+import NavLinks from "../components/NavLinks";
 import ThemeApplier from "../components/ThemeApplier";
 
 interface Props {
@@ -12,16 +13,6 @@ const {
   title = "School Events Hub",
   description = "Every school event. One place.",
 } = Astro.props;
-
-const links = [
-  { href: "/", label: "Home", icon: "M3 12l9-9 9 9M5 10v10h5v-6h4v6h5V10" },
-  { href: "/events", label: "Calendar", icon: "M8 2v4M16 2v4M3 10h18M4 4h16a1 1 0 011 1v15a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1z" },
-  { href: "/announcements", label: "Announcements", icon: "M3 11l18-5v12L3 14v-3zM11.6 16.8a3 3 0 11-5.8-1.6" },
-  { href: "/tickets", label: "Tickets", icon: "M2 9a3 3 0 010 6v2a2 2 0 002 2h16a2 2 0 002-2v-2a3 3 0 010-6V7a2 2 0 00-2-2H4a2 2 0 00-2 2zM13 5v2M13 17v2M13 11v2" },
-  { href: "/dashboard", label: "Dashboard", icon: "M3 3h9v9H3zM12 3h9v5h-9zM12 12h9v9h-9zM3 16h9v5H3z" },
-];
-
-const currentPath = Astro.url.pathname;
 ---
 
 <!doctype html>
@@ -43,27 +34,10 @@ const currentPath = Astro.url.pathname;
           </span>
           <span class="text-slate-100">School Events Hub</span>
         </a>
-        <nav class="flex flex-col gap-2.5 text-sm font-medium text-slate-300">
-          {
-            links.map((link) => {
-              const isActive = link.href === "/" ? currentPath === "/" : currentPath.startsWith(link.href);
-              return (
-                <a
-                  href={link.href}
-                  aria-current={isActive ? "page" : undefined}
-                  class={`flex items-center gap-3 whitespace-nowrap rounded-xl border px-4 py-3 transition-colors ${isActive
-                    ? "border-indigo-400/60 bg-white/5 text-white"
-                    : "border-white/10 text-slate-300 hover:border-white/25 hover:bg-white/5 hover:text-white"}`}
-                >
-                  <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d={link.icon} />
-                  </svg>
-                  {link.label}
-                </a>
-              );
-            })
-          }
-        </nav>
+        <NavLinks client:load variant="sidebar" />
+        <div class="mt-auto">
+          <AuthNav client:load />
+        </div>
       </aside>
 
       <div class="flex min-w-0 flex-col">
@@ -75,24 +49,12 @@ const currentPath = Astro.url.pathname;
               </span>
               <span class="hidden text-slate-100 sm:inline">School Events Hub</span>
             </a>
-            <div class="-mx-1 flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto text-sm font-medium text-slate-300">
-              {
-                links.map((link) => (
-                  <a href={link.href} class="whitespace-nowrap rounded-lg px-2.5 py-1.5 transition-colors hover:bg-white/5 hover:text-white">
-                    {link.label}
-                  </a>
-                ))
-              }
-            </div>
+            <NavLinks client:load variant="bar" />
             <div class="flex shrink-0 items-center">
               <AuthNav client:load />
             </div>
           </nav>
         </header>
-
-        <div class="hidden justify-end px-8 pt-4 lg:flex">
-          <AuthNav client:load />
-        </div>
 
         <main class="flex-1 px-4 py-8 lg:px-8">
           <slot />

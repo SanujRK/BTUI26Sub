@@ -42,13 +42,23 @@ html.light aside {
 
 html.light header nav a,
 html.light :where(header nav div) a,
-html.light aside nav a {
+html.light aside a {
   color: #475569;
 }
 
 html.light header nav a:hover,
-html.light aside nav a:hover {
+html.light aside a:hover {
   color: #0f172a;
+  background-color: rgba(15, 23, 42, 0.05);
+}
+
+html.light aside button {
+  color: #64748b;
+  border-color: rgba(15, 23, 42, 0.12);
+}
+
+html.light aside button:hover {
+  color: #b91c1c;
   background-color: rgba(15, 23, 42, 0.05);
 }
 

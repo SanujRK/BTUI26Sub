@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import listPlugin from "@fullcalendar/list";
-import interactionPlugin from "@fullcalendar/interaction";
+import interactionPlugin, { Draggable } from "@fullcalendar/interaction";
 
 import { useUser } from "../hooks/useUser";
 import {
@@ -31,6 +31,7 @@ type AnnouncementNotice = { id: string; title: string; starts_at: string };
 
 export default function EventCalendar() {
   const calendarRef = useRef<FullCalendar>(null);
+  const poolDraggables = useRef(new Map<string, { destroy: () => void }>());
   const { user } = useUser();
 
   const [events, setEvents] = useState<EventView[]>([]);
@@ -69,6 +70,13 @@ export default function EventCalendar() {
     const api = calendarRef.current?.getApi();
     if (api) api.changeView(view);
   }, [view]);
+
+  useEffect(() => {
+    return () => {
+      poolDraggables.current.forEach((d) => d.destroy());
+      poolDraggables.current.clear();
+    };
+  }, []);
 
   const eventById = useMemo(
     () => new Map(events.map((e) => [e.id, e])),
@@ -285,7 +293,14 @@ export default function EventCalendar() {
             {pool.map((t) => (
               <div
                 key={t.event_id}
-                className="fc-event fc-draggable cursor-grab select-none rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-white/10"
+                ref={(node) => {
+                  if (!node || poolDraggables.current.has(t.event_id)) return;
+                  poolDraggables.current.set(
+                    t.event_id,
+                    new Draggable(node, { eventData: { title: t.title } })
+                  );
+                }}
+                className="fc-event cursor-grab select-none rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-white/10"
                 data-event={JSON.stringify({ title: t.title })}
                 data-event-id={t.event_id}
                 data-title={t.title}
