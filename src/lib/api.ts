@@ -418,3 +418,55 @@ export async function getRecentHighlights(limit = 10): Promise<Highlight[]> {
   if (error) throw error;
   return data ?? [];
 }
+
+export type ProfileRow = {
+  id: string;
+  email: string;
+  full_name: string;
+  role: string;
+};
+
+export async function getProfiles(): Promise<ProfileRow[]> {
+  if (!isSupabaseConfigured) return [];
+  const client = requireClient();
+  const { data, error } = await client
+    .from("profiles")
+    .select("id, email, full_name, role")
+    .order("full_name", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function changeUserRole(
+  userId: string,
+  role: string
+): Promise<string> {
+  const client = requireClient();
+  const { data, error } = await client.rpc("set_user_role", {
+    p_user: userId,
+    p_role: role,
+  });
+  if (error) throw error;
+  return (data as string) ?? "";
+}
+
+export async function getTheme(): Promise<string> {
+  if (!isSupabaseConfigured) return "dark";
+  const client = requireClient();
+  const { data, error } = await client
+    .from("site_settings")
+    .select("value")
+    .eq("key", "theme")
+    .maybeSingle();
+  if (error) throw error;
+  return (data?.value as string) ?? "dark";
+}
+
+export async function setTheme(theme: string): Promise<void> {
+  const client = requireClient();
+  const { error } = await client
+    .from("site_settings")
+    .update({ value: theme })
+    .eq("key", "theme");
+  if (error) throw error;
+}

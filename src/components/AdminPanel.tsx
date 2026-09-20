@@ -5,6 +5,10 @@ import {
   getEvents,
   getAnnouncements,
   getRecentHighlights,
+  getProfiles,
+  changeUserRole,
+  getTheme,
+  setTheme,
   saveEvent,
   removeEvent,
   postAnnouncement,
@@ -13,6 +17,7 @@ import {
   type EventView,
   type Announcement,
   type Highlight,
+  type ProfileRow,
 } from "../lib/api";
 import { categoryClass } from "../lib/categories";
 
@@ -64,6 +69,9 @@ export default function AdminPanel() {
   const [annForm, setAnnForm] = useState({ title: "", body: "", event_id: "" });
   const [hiForm, setHiForm] = useState({ event_id: "", body: "" });
   const [feedback, setFeedback] = useState("");
+  const [theme, setThemeState] = useState<"dark" | "light">("dark");
+  const [profiles, setProfiles] = useState<ProfileRow[]>([]);
+  const [roleBusy, setRoleBusy] = useState("");
 
   const refresh = async () => {
     setEvents(await getEvents());
@@ -84,15 +92,49 @@ export default function AdminPanel() {
     getEvents()
       .then((ev) => {
         setEvents(ev);
-        return Promise.all([getAnnouncements(), getRecentHighlights()]);
+        return Promise.all([getAnnouncements(), getRecentHighlights(), getTheme(), getProfiles()]);
       })
-      .then(([ann, hi]) => {
+      .then(([ann, hi, t, prof]) => {
         setAnnouncements(ann);
         setHighlights(hi);
+        setThemeState((t as "dark" | "light") ?? "dark");
+        setProfiles(prof);
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
+
+  const applyTheme = async (next: "dark" | "light") => {
+    setThemeState(next);
+    if (next === "light") {
+      document.documentElement.classList.add("light");
+    } else {
+      document.documentElement.classList.remove("light");
+    }
+    try {
+      await setTheme(next);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save theme.");
+    }
+  };
+
+  const flipRole = async (p: ProfileRow) => {
+    const next = p.role === "teacher" ? "student" : "teacher";
+    setRoleBusy(p.id);
+    try {
+      const msg = await changeUserRole(p.id, next);
+      if (msg !== "role updated") {
+        setError(msg || "Failed to update role.");
+      } else {
+        setProfiles((list) =>
+          list.map((x) => (x.id === p.id ? { ...x, role: next } : x))
+        );
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update role.");
+    }
+    setRoleBusy("");
+  };
 
   const submitAnnouncement = async () => {
     if (!annForm.title.trim() || !annForm.body.trim() || !user) return;
@@ -335,6 +377,94 @@ export default function AdminPanel() {
             </div>
           )}
         </section>
+
+        <Guard roles={["admin"]}>
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <section className="card card-ring rounded-2xl p-5">
+              <h2 className="text-lg font-bold tracking-tight">Site-wide theme</h2>
+              <p className="mt-1 text-xs text-slate-500">
+                Every visitor sees this choice across the whole site.
+              </p>
+              <div className="mt-4 flex gap-2">
+                <button
+                  onClick={() => applyTheme("dark")}
+                  className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${
+                    theme === "dark"
+                      ? "bg-slate-200 text-slate-900"
+                      : "border border-white/15 text-slate-300 hover:bg-white/5"
+                  }`}
+                >
+                  Dark
+                </button>
+                <button
+                  onClick={() => applyTheme("light")}
+                  className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${
+                    theme === "light"
+                      ? "bg-slate-200 text-slate-900"
+                      : "border border-white/15 text-slate-300 hover:bg-white/5"
+                  }`}
+                >
+                  Light
+                </button>
+              </div>
+            </section>
+
+            <section className="card card-ring rounded-2xl p-5">
+              <h2 className="text-lg font-bold tracking-tight">Teachers</h2>
+              <p className="mt-1 text-xs text-slate-500">
+                Promote students and parents to teachers, or demote them back.
+              </p>
+              <div className="mt-4 max-h-80 space-y-2 overflow-y-auto pr-1">
+                {profiles.length === 0 && (
+                  <p className="text-sm text-slate-500">No accounts yet.</p>
+                )}
+                {profiles.map((p) => {
+                  const actionable =
+                    p.role !== "admin" && p.id !== user?.id;
+                  return (
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between gap-3 rounded-xl bg-white/5 px-3 py-2 ring-1 ring-white/10"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-slate-200">
+                          {p.full_name || "Unnamed"}
+                        </p>
+                        <p className="truncate text-xs text-slate-500">{p.email}</p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 ${
+                            p.role === "admin"
+                              ? "bg-amber-400/15 text-amber-300 ring-amber-400/30"
+                              : p.role === "teacher"
+                                ? "bg-indigo-400/15 text-indigo-300 ring-indigo-400/30"
+                                : "bg-white/5 text-slate-400 ring-white/10"
+                          }`}
+                        >
+                          {p.role}
+                        </span>
+                        {actionable && (
+                          <button
+                            onClick={() => flipRole(p)}
+                            disabled={roleBusy === p.id}
+                            className="rounded-lg border border-white/15 px-2 py-1 text-xs font-semibold text-slate-300 transition-colors hover:bg-white/5 disabled:opacity-50"
+                          >
+                            {roleBusy === p.id
+                              ? "…"
+                              : p.role === "teacher"
+                                ? "Demote"
+                                : "Promote"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          </div>
+        </Guard>
       </div>
 
       {modal && (

@@ -30,6 +30,108 @@ html.light :where(nav, header, footer, main) {
   color-scheme: light;
 }
 
+html.light header {
+  background-color: rgba(248, 250, 252, 0.85);
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+html.light header nav a,
+html.light :where(header nav div) a {
+  color: #475569;
+}
+
+html.light header nav a:hover {
+  color: #0f172a;
+  background-color: rgba(15, 23, 42, 0.05);
+}
+
+html.light footer {
+  border-color: rgba(15, 23, 42, 0.08);
+  color: #64748b;
+}
+
+html.light :where(h1, h2, h3) {
+  color: #0f172a;
+}
+
+html.light .card {
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px 0 rgb(15 23 42 / 0.08);
+}
+
+html.light .card-ring {
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+}
+
+html.light .card-ring:hover {
+  background-color: rgba(15, 23, 42, 0.02);
+}
+
+html.light :where(input, select, textarea) {
+  color: #0f172a;
+  background-color: #f8fafc;
+  border-color: rgba(15, 23, 42, 0.15);
+}
+
+html.light :where(input, select, textarea)::placeholder {
+  color: #94a3b8;
+}
+
+html.light :where(input, select, textarea):focus {
+  border-color: #6366f1;
+}
+
+html.light :where(input, select) option {
+  background-color: #ffffff;
+}
+
+html.light .btn-ghost {
+  color: #334155;
+  border-color: rgba(15, 23, 42, 0.15);
+}
+
+html.light .btn-ghost:hover {
+  background-color: rgba(15, 23, 42, 0.05);
+}
+
+html.light .fc {
+  --fc-border-color: rgba(15, 23, 42, 0.1);
+  --fc-neutral-bg-color: rgba(15, 23, 42, 0.03);
+  --fc-today-bg-color: rgba(99, 102, 241, 0.1);
+  --fc-list-event-hover-bg-color: rgba(15, 23, 42, 0.05);
+  --fc-more-link-bg-color: rgba(15, 23, 42, 0.05);
+  color: #334155;
+}
+
+html.light .fc .fc-toolbar-title {
+  color: #0f172a;
+}
+
+html.light .fc .fc-button {
+  background-color: rgba(15, 23, 42, 0.06);
+  border-color: rgba(15, 23, 42, 0.12);
+  color: #1e293b;
+}
+
+html.light .fc .fc-button:hover {
+  background-color: rgba(15, 23, 42, 0.1);
+}
+
+html.light .fc .fc-button:disabled {
+  background-color: rgba(15, 23, 42, 0.04);
+  color: #94a3b8;
+}
+
+html.light .fc .fc-daygrid-day-number,
+html.light .fc .fc-col-header-cell-cushion,
+html.light .fc .fc-list-day-cushion {
+  color: #475569;
+}
+
+html.light .fc .fc-daygrid-more-link {
+  color: #4f46e5;
+}
+
 @layer base {
   .category-chip {
     display: inline-flex;
