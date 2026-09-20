@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import AuthNav from "../components/AuthNav";
 
 interface Props {
   title?: string;
@@ -46,12 +47,7 @@ const links = [
               </a>
             ))
           }
-          <a
-            href="/login"
-            class="ml-2 rounded-lg bg-indigo-600 px-3 py-1.5 font-semibold text-white transition-colors hover:bg-indigo-500"
-          >
-            Sign in
-          </a>
+          <AuthNav client:load />
         </div>
       </nav>
     </header>
