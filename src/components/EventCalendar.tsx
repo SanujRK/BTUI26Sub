@@ -18,6 +18,8 @@ import {
 } from "../lib/api";
 import { categoryColorOf } from "../lib/categories";
 
+const CATEGORIES = ["Debate", "Sports", "Exhibition", "Culture", "Tech", "General"];
+
 const PALETTE = ["#818cf8", "#a78bfa", "#34d399", "#38bdf8", "#fb7185", "#22d3ee", "#fbbf24"];
 
 type ModalState =
@@ -38,6 +40,8 @@ export default function EventCalendar() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState<AnnouncementNotice[] | null>(null);
   const [modal, setModal] = useState<ModalState | null>(null);
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("");
 
   const isMobile =
     typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
@@ -115,6 +119,11 @@ export default function EventCalendar() {
 
   const officialEvents = events
     .filter((e) => e.starts_at)
+    .filter((e) => {
+      if (category && e.category !== category) return false;
+      if (query && !e.title.toLowerCase().includes(query.toLowerCase())) return false;
+      return true;
+    })
     .map((e) => ({
       id: e.id,
       title: e.title,
@@ -165,6 +174,40 @@ export default function EventCalendar() {
             + Custom reminder
           </button>
         )}
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search events…"
+          className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400"
+        />
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setCategory("")}
+            className={`category-chip ring-1 ${
+              category === ""
+                ? "bg-indigo-400/25 text-indigo-200 ring-indigo-400/40"
+                : "bg-white/5 text-slate-400 ring-white/10 hover:bg-white/10"
+            }`}
+          >
+            All
+          </button>
+          {CATEGORIES.map((c) => (
+            <button
+              key={c}
+              onClick={() => setCategory(category === c ? "" : c)}
+              className={`category-chip ring-1 ${
+                category === c
+                  ? "bg-indigo-400/25 text-indigo-200 ring-indigo-400/40"
+                  : "bg-white/5 text-slate-400 ring-white/10 hover:bg-white/10"
+              }`}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_260px]">
