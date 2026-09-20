@@ -137,3 +137,93 @@ export async function deleteCustomEvent(id: string): Promise<void> {
   const { error } = await client.from("custom_events").delete().eq("id", id);
   if (error) throw error;
 }
+
+export type Highlight = {
+  id: string;
+  body: string;
+  created_at: string;
+};
+
+export async function getHighlights(eventId: string): Promise<Highlight[]> {
+  if (!isSupabaseConfigured) return [];
+  const client = requireClient();
+  const { data, error } = await client
+    .from("highlights")
+    .select("id, body, created_at")
+    .eq("event_id", eventId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export function subscribeToHighlights(
+  eventId: string,
+  onNew: (highlight: Highlight) => void
+): () => void {
+  if (!isSupabaseConfigured) return () => undefined;
+  const client = requireClient();
+  const channel = client
+    .channel(`highlights:${eventId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "highlights",
+        filter: `event_id=eq.${eventId}`,
+      },
+      (payload) => onNew(payload.new as Highlight)
+    )
+    .subscribe();
+  return () => {
+    client.removeChannel(channel);
+  };
+}
+
+export async function registerForEvent(
+  eventId: string
+): Promise<{ ok: boolean; message: string }> {
+  const client = requireClient();
+  const { data, error } = await client.rpc("register_for_event", {
+    p_event_id: eventId,
+  });
+  if (error) return { ok: false, message: error.message };
+  return { ok: (data as string) === "registered", message: (data as string) ?? "" };
+}
+
+export async function buyTicket(
+  eventId: string
+): Promise<{ ok: boolean; message: string }> {
+  const client = requireClient();
+  const { data, error } = await client.rpc("buy_ticket", {
+    p_event_id: eventId,
+  });
+  if (error) return { ok: false, message: error.message };
+  return { ok: (data as string) === "ticket bought", message: (data as string) ?? "" };
+}
+
+export async function hasRegistration(userId: string, eventId: string): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  const client = requireClient();
+  const { data, error } = await client
+    .from("registrations")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("event_id", eventId)
+    .maybeSingle();
+  if (error) throw error;
+  return !!data;
+}
+
+export async function hasTicket(userId: string, eventId: string): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  const client = requireClient();
+  const { data, error } = await client
+    .from("tickets")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("event_id", eventId)
+    .maybeSingle();
+  if (error) throw error;
+  return !!data;
+}
