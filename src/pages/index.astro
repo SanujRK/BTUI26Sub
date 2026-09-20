@@ -1,18 +1,21 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import HomeFeed from "../components/HomeFeed";
 ---
 
 <Layout title="School Events Hub">
-  <section class="card card-ring flex min-h-[50vh] flex-col items-center justify-center gap-3 px-6 py-16 text-center">
-    <h1 class="max-w-2xl text-4xl font-black tracking-tight sm:text-5xl">
+  <section class="py-6 text-center">
+    <h1 class="mx-auto max-w-2xl text-4xl font-black tracking-tight sm:text-5xl">
       Every school event.
       <span class="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">
-        One place.
+        One command center.
       </span>
     </h1>
-    <p class="max-w-xl text-slate-400">
+    <p class="mx-auto mt-3 max-w-xl text-slate-400">
       Announcements, calendars, registrations, and tickets for every debate,
-      meet, and exhibition this year.
+      meet, and exhibition this year — with live updates as they happen.
     </p>
   </section>
+
+  <HomeFeed client:load />
 </Layout>

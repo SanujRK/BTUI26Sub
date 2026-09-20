@@ -322,6 +322,60 @@ as $$
   where e.id = p_event_id;
 $$;
 
+create or replace function public.get_public_events()
+returns jsonb
+language sql
+security definer
+set search_path = public
+as $$
+  select coalesce(jsonb_agg(
+    jsonb_build_object(
+      'id', e.id,
+      'title', e.title,
+      'description', e.description,
+      'starts_at', e.starts_at,
+      'ends_at', e.ends_at,
+      'venue', e.venue,
+      'category', e.category,
+      'capacity', e.capacity,
+      'image_url', e.image_url,
+      'is_ticketed', e.is_ticketed,
+      'ticket_price', e.ticket_price,
+      'registrations', (select count(*) from public.registrations r where r.event_id = e.id),
+      'tickets', (select count(*) from public.tickets t where t.event_id = e.id),
+      'created_at', e.created_at
+    )
+    order by e.starts_at nulls last, e.created_at
+  ), '[]'::jsonb)
+  from public.events e;
+$$;
+
+create or replace function public.get_public_event(p_event_id uuid)
+returns jsonb
+language sql
+security definer
+set search_path = public
+as $$
+  select jsonb_build_object(
+    'id', e.id,
+    'title', e.title,
+    'description', e.description,
+    'starts_at', e.starts_at,
+    'ends_at', e.ends_at,
+    'venue', e.venue,
+    'category', e.category,
+    'capacity', e.capacity,
+    'image_url', e.image_url,
+    'is_ticketed', e.is_ticketed,
+    'ticket_price', e.ticket_price,
+    'registrations', (select count(*) from public.registrations r where r.event_id = e.id),
+    'tickets', (select count(*) from public.tickets t where t.event_id = e.id),
+    'created_at', e.created_at
+  )
+  from public.events e
+  where e.id = p_event_id;
+$$;
+
 create or replace function public.set_user_role(p_user uuid, p_role text)
 returns text
 language plpgsql

@@ -1,0 +1,12 @@
+export const categoryClasses: Record<string, string> = {
+  Debate: "bg-violet-400/15 text-violet-300 ring-violet-400/30",
+  Sports: "bg-emerald-400/15 text-emerald-300 ring-emerald-400/30",
+  Exhibition: "bg-sky-400/15 text-sky-300 ring-sky-400/30",
+  Culture: "bg-rose-400/15 text-rose-300 ring-rose-400/30",
+  Tech: "bg-cyan-400/15 text-cyan-300 ring-cyan-400/30",
+  General: "bg-indigo-400/15 text-indigo-300 ring-indigo-400/30",
+};
+
+export function categoryClass(category: string): string {
+  return categoryClasses[category] ?? categoryClasses.General;
+}
