@@ -35,12 +35,19 @@ html.light header {
   border-color: rgba(15, 23, 42, 0.08);
 }
 
+html.light aside {
+  background-color: #f8fafc;
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
 html.light header nav a,
-html.light :where(header nav div) a {
+html.light :where(header nav div) a,
+html.light aside nav a {
   color: #475569;
 }
 
-html.light header nav a:hover {
+html.light header nav a:hover,
+html.light aside nav a:hover {
   color: #0f172a;
   background-color: rgba(15, 23, 42, 0.05);
 }
