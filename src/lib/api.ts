@@ -311,3 +311,64 @@ export async function getMyTickets(): Promise<TicketView[]> {
       created_at: t.created_at,
     }));
 }
+
+export type EventInput = {
+  title: string;
+  description: string;
+  venue: string;
+  category: string;
+  starts_at: string | null;
+  ends_at: string | null;
+  capacity: number | null;
+  image_url: string | null;
+  is_ticketed: boolean;
+  ticket_price: number;
+};
+
+export async function saveEvent(
+  input: EventInput & { id?: string }
+): Promise<void> {
+  const client = requireClient();
+  if (input.id) {
+    const { error } = await client
+      .from("events")
+      .update({
+        title: input.title,
+        description: input.description,
+        venue: input.venue,
+        category: input.category,
+        starts_at: input.starts_at,
+        ends_at: input.ends_at,
+        capacity: input.capacity,
+        image_url: input.image_url,
+        is_ticketed: input.is_ticketed,
+        ticket_price: input.ticket_price,
+      })
+      .eq("id", input.id);
+    if (error) throw error;
+    return;
+  }
+  const {
+    data: { session },
+  } = await client.auth.getSession();
+  const { error } = await client.from("events").insert({
+    title: input.title,
+    description: input.description,
+    venue: input.venue,
+    category: input.category,
+    starts_at: input.starts_at,
+    ends_at: input.ends_at,
+    capacity: input.capacity,
+    image_url: input.image_url,
+    is_ticketed: input.is_ticketed,
+    ticket_price: input.ticket_price,
+    created_by: session?.user.id ?? null,
+  });
+  if (error) throw error;
+}
+
+export async function removeEvent(id: string): Promise<void> {
+  const client = requireClient();
+  const { error } = await client.from("events").delete().eq("id", id);
+  if (error) throw error;
+}
