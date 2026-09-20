@@ -227,3 +227,46 @@ export async function hasTicket(userId: string, eventId: string): Promise<boolea
   if (error) throw error;
   return !!data;
 }
+
+export type MyRegistration = {
+  event_id: string;
+  title: string;
+  starts_at: string | null;
+  ends_at: string | null;
+  venue: string;
+  category: string;
+  created_at: string;
+};
+
+export async function getMyRegistrations(): Promise<MyRegistration[]> {
+  if (!isSupabaseConfigured) return [];
+  const client = requireClient();
+  const { data, error } = await client
+    .from("registrations")
+    .select(
+      "created_at, events!inner(id, title, starts_at, ends_at, venue, category)"
+    )
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return ((data ?? []) as Array<{
+    created_at: string;
+    events: {
+      id: string;
+      title: string;
+      starts_at: string | null;
+      ends_at: string | null;
+      venue: string;
+      category: string;
+    } | null;
+  }>)
+    .filter((r) => !!r.events)
+    .map((r) => ({
+      event_id: r.events!.id,
+      title: r.events!.title,
+      starts_at: r.events!.starts_at,
+      ends_at: r.events!.ends_at,
+      venue: r.events!.venue,
+      category: r.events!.category,
+      created_at: r.created_at,
+    }));
+}

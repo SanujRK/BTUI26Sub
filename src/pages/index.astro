@@ -1,6 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import HomeFeed from "../components/HomeFeed";
+import HomeRegistrations from "../components/HomeRegistrations";
 ---
 
 <Layout title="School Events Hub">
@@ -18,4 +19,8 @@ import HomeFeed from "../components/HomeFeed";
   </section>
 
   <HomeFeed client:load />
+
+  <section>
+    <HomeRegistrations client:load />
+  </section>
 </Layout>
