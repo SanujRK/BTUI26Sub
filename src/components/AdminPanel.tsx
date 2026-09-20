@@ -1,10 +1,18 @@
 import { useEffect, useState } from "react";
 import Guard from "./Guard";
+import { useUser } from "../hooks/useUser";
 import {
   getEvents,
+  getAnnouncements,
+  getRecentHighlights,
   saveEvent,
   removeEvent,
+  postAnnouncement,
+  removeAnnouncement,
+  postHighlight,
   type EventView,
+  type Announcement,
+  type Highlight,
 } from "../lib/api";
 import { categoryClass } from "../lib/categories";
 
@@ -46,21 +54,74 @@ function toLocalInput(iso: string | null): string {
 }
 
 export default function AdminPanel() {
+  const { user } = useUser();
   const [events, setEvents] = useState<EventView[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [modal, setModal] = useState<{ id?: string } | null>(null);
+  const [annForm, setAnnForm] = useState({ title: "", body: "", event_id: "" });
+  const [hiForm, setHiForm] = useState({ event_id: "", body: "" });
+  const [feedback, setFeedback] = useState("");
 
   const refresh = async () => {
     setEvents(await getEvents());
   };
 
+  const refreshAll = async () => {
+    const [ev, ann, hi] = await Promise.all([
+      getEvents(),
+      getAnnouncements(),
+      getRecentHighlights(),
+    ]);
+    setEvents(ev);
+    setAnnouncements(ann);
+    setHighlights(hi);
+  };
+
   useEffect(() => {
     getEvents()
-      .then(setEvents)
+      .then((ev) => {
+        setEvents(ev);
+        return Promise.all([getAnnouncements(), getRecentHighlights()]);
+      })
+      .then(([ann, hi]) => {
+        setAnnouncements(ann);
+        setHighlights(hi);
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
+
+  const submitAnnouncement = async () => {
+    if (!annForm.title.trim() || !annForm.body.trim() || !user) return;
+    try {
+      await postAnnouncement({
+        title: annForm.title.trim(),
+        body: annForm.body.trim(),
+        author: user.fullName,
+        event_id: annForm.event_id || null,
+      });
+      setAnnForm({ title: "", body: "", event_id: "" });
+      setFeedback("Announcement posted.");
+      await refreshAll();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to post announcement.");
+    }
+  };
+
+  const submitHighlight = async () => {
+    if (!hiForm.event_id || !hiForm.body.trim()) return;
+    try {
+      await postHighlight({ event_id: hiForm.event_id, body: hiForm.body.trim() });
+      setHiForm({ event_id: "", body: "" });
+      setFeedback("Highlight broadcast live.");
+      await refreshAll();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to post highlight.");
+    }
+  };
 
   return (
     <Guard roles={["teacher", "admin"]}>
@@ -80,6 +141,131 @@ export default function AdminPanel() {
             {error}
           </p>
         )}
+        {feedback && (
+          <p className="card card-ring rounded-2xl border-emerald-400/30 p-4 text-center text-sm font-medium text-emerald-300">
+            {feedback}
+          </p>
+        )}
+
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <section className="card card-ring rounded-2xl p-5">
+            <h2 className="text-lg font-bold tracking-tight">Post announcement</h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Shows up on the home page, dashboard, and the announcements feed.
+            </p>
+            <div className="mt-4 space-y-3">
+              <input
+                value={annForm.title}
+                onChange={(e) => setAnnForm((f) => ({ ...f, title: e.target.value }))}
+                placeholder="Title"
+                className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400"
+              />
+              <textarea
+                value={annForm.body}
+                onChange={(e) => setAnnForm((f) => ({ ...f, body: e.target.value }))}
+                placeholder="What everyone should know…"
+                className="min-h-24 w-full resize-y rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400"
+              />
+              <select
+                value={annForm.event_id}
+                onChange={(e) => setAnnForm((f) => ({ ...f, event_id: e.target.value }))}
+                className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400"
+              >
+                <option value="" className="bg-[#0d0f18]">
+                  No linked event
+                </option>
+                {events.map((e) => (
+                  <option key={e.id} value={e.id} className="bg-[#0d0f18]">
+                    {e.title}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={() => submitAnnouncement()}
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+              >
+                Publish announcement
+              </button>
+            </div>
+            {announcements.length > 0 && (
+              <div className="mt-5 space-y-2 border-t border-white/10 pt-4">
+                {announcements.slice(0, 5).map((a) => (
+                  <div
+                    key={a.id}
+                    className="flex items-center justify-between gap-3 rounded-xl bg-white/5 px-3 py-2 ring-1 ring-white/10"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-slate-200">{a.title}</p>
+                      <p className="truncate text-xs text-slate-500">
+                        {a.author} · {new Date(a.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() =>
+                        removeAnnouncement(a.id)
+                          .then(refreshAll)
+                          .catch((err) => setError(err.message))
+                      }
+                      className="rounded-lg px-2 py-1 text-xs font-bold text-rose-300 hover:bg-rose-400/10"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="card card-ring rounded-2xl p-5">
+            <h2 className="text-lg font-bold tracking-tight">Live highlight</h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Broadcasts instantly to the event's detail page via Supabase Realtime.
+            </p>
+            <div className="mt-4 space-y-3">
+              <select
+                value={hiForm.event_id}
+                onChange={(e) => setHiForm((f) => ({ ...f, event_id: e.target.value }))}
+                className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400"
+              >
+                <option value="" className="bg-[#0d0f18]">
+                  Choose an event
+                </option>
+                {events.map((e) => (
+                  <option key={e.id} value={e.id} className="bg-[#0d0f18]">
+                    {e.title}
+                  </option>
+                ))}
+              </select>
+              <textarea
+                value={hiForm.body}
+                onChange={(e) => setHiForm((f) => ({ ...f, body: e.target.value }))}
+                placeholder="e.g. Intense final round — the crowd is in! 🔥"
+                className="min-h-20 w-full resize-y rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400"
+              />
+              <button
+                onClick={() => submitHighlight()}
+                className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-violet-500"
+              >
+                Broadcast now
+              </button>
+            </div>
+            {highlights.length > 0 && (
+              <div className="mt-5 space-y-2 border-t border-white/10 pt-4">
+                {highlights.map((h) => (
+                  <div
+                    key={h.id}
+                    className="rounded-xl border-l-2 border-violet-400/60 bg-white/5 px-3 py-2"
+                  >
+                    <p className="text-sm text-slate-200">{h.body}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {new Date(h.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
 
         <section>
           <h2 className="mb-3 text-lg font-bold tracking-tight">Manage events</h2>

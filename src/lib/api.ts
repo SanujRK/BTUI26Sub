@@ -372,3 +372,49 @@ export async function removeEvent(id: string): Promise<void> {
   const { error } = await client.from("events").delete().eq("id", id);
   if (error) throw error;
 }
+
+export async function postAnnouncement(input: {
+  title: string;
+  body: string;
+  author: string;
+  event_id?: string | null;
+}): Promise<void> {
+  const client = requireClient();
+  const { error } = await client.from("announcements").insert({
+    title: input.title,
+    body: input.body,
+    author: input.author,
+    event_id: input.event_id ?? null,
+  });
+  if (error) throw error;
+}
+
+export async function removeAnnouncement(id: string): Promise<void> {
+  const client = requireClient();
+  const { error } = await client.from("announcements").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function postHighlight(input: {
+  event_id: string;
+  body: string;
+}): Promise<void> {
+  const client = requireClient();
+  const { error } = await client.from("highlights").insert({
+    event_id: input.event_id,
+    body: input.body,
+  });
+  if (error) throw error;
+}
+
+export async function getRecentHighlights(limit = 10): Promise<Highlight[]> {
+  if (!isSupabaseConfigured) return [];
+  const client = requireClient();
+  const { data, error } = await client
+    .from("highlights")
+    .select("id, body, created_at")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data ?? [];
+}
