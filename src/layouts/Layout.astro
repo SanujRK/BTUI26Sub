@@ -35,20 +35,24 @@ const links = [
     <ThemeApplier client:load />
     <header class="sticky top-0 z-50 border-b border-white/10 bg-[#0d0f18]/85 backdrop-blur">
       <nav class="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3">
-        <a href="/" class="flex shrink-0 items-center gap-2 font-bold tracking-tight">
-          <span class="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-sm font-black text-white">
-            SEH
-          </span>
-          <span class="hidden text-slate-100 sm:inline">School Events Hub</span>
-        </a>
-        <div class="-mx-1 flex min-w-0 items-center gap-0.5 overflow-x-auto text-sm font-medium text-slate-300">
-          {
-            links.map((link) => (
-              <a href={link.href} class="whitespace-nowrap rounded-lg px-2.5 py-1.5 transition-colors hover:bg-white/5 hover:text-white">
-                {link.label}
-              </a>
-            ))
-          }
+        <div class="flex min-w-0 items-center gap-3">
+          <a href="/" class="flex shrink-0 items-center gap-2 font-bold tracking-tight">
+            <span class="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-sm font-black text-white">
+              SEH
+            </span>
+            <span class="hidden text-slate-100 sm:inline">School Events Hub</span>
+          </a>
+          <div class="-mx-1 flex min-w-0 items-center gap-0.5 overflow-x-auto text-sm font-medium text-slate-300">
+            {
+              links.map((link) => (
+                <a href={link.href} class="whitespace-nowrap rounded-lg px-2.5 py-1.5 transition-colors hover:bg-white/5 hover:text-white">
+                  {link.label}
+                </a>
+              ))
+            }
+          </div>
+        </div>
+        <div class="flex shrink-0 items-center">
           <AuthNav client:load />
         </div>
       </nav>
