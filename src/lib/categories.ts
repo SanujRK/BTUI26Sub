@@ -10,3 +10,16 @@ export const categoryClasses: Record<string, string> = {
 export function categoryClass(category: string): string {
   return categoryClasses[category] ?? categoryClasses.General;
 }
+
+export const categoryColor: Record<string, string> = {
+  Debate: "#a78bfa",
+  Sports: "#34d399",
+  Exhibition: "#38bdf8",
+  Culture: "#fb7185",
+  Tech: "#22d3ee",
+  General: "#818cf8",
+};
+
+export function categoryColorOf(category: string): string {
+  return categoryColor[category] ?? categoryColor.General;
+}
