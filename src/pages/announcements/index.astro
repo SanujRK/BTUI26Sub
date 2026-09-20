@@ -1,0 +1,14 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import AnnouncementsFeed from "../../components/AnnouncementsFeed";
+---
+
+<Layout title="Announcements — School Events Hub">
+  <section class="mb-8">
+    <h1 class="text-3xl font-black tracking-tight">Announcements</h1>
+    <p class="mt-2 text-slate-400">
+      The latest from teachers and the school office.
+    </p>
+  </section>
+  <AnnouncementsFeed client:load />
+</Layout>
