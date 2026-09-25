@@ -332,6 +332,72 @@ export default function DashboardPage() {
 
       <section>
         <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-bold tracking-tight">Announcements</h2>
+          <a href="/events" className="text-sm text-indigo-300 hover:text-indigo-200">
+            View all →
+          </a>
+        </div>
+        {upcoming.length === 0 ? (
+          <p className="text-slate-500">Nothing scheduled yet.</p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {upcoming.map((e) => (
+              <a
+                key={e.id}
+                href={`/event?id=${e.id}`}
+                className="card card-ring group rounded-2xl p-5 transition-all hover:-translate-y-0.5 hover:bg-white/[0.07]"
+              >
+                <div className="flex items-center justify-between">
+                  <span className={`category-chip ring-1 ${categoryClass(e.category)}`}>
+                    {e.category}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-500">
+                      {e.starts_at
+                        ? new Date(e.starts_at).toLocaleTimeString(undefined, {
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })
+                        : ""}
+                    </span>
+                    <button
+                      onClick={(ev) => {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                        pinEvent(e);
+                      }}
+                      aria-label={pinnedIds.has(e.id) ? "Added to calendar" : "Add to calendar"}
+                      title={pinnedIds.has(e.id) ? "Added to calendar" : "Add to calendar"}
+                      className={`flex h-6 w-6 items-center justify-center rounded-full text-sm font-bold transition-colors ${
+                        pinnedIds.has(e.id)
+                          ? "bg-indigo-400/20 text-indigo-200 ring-1 ring-indigo-400/40"
+                          : "bg-white/10 text-slate-200 ring-1 ring-white/20 hover:bg-indigo-500 hover:text-white"
+                      }`}
+                    >
+                      {pinnedIds.has(e.id) ? "✓" : "+"}
+                    </button>
+                  </div>
+                </div>
+                <h3 className="mt-3 font-semibold leading-snug text-slate-100 group-hover:text-white">
+                  {e.title}
+                </h3>
+                <p className="mt-1 text-sm text-slate-400">
+                  {e.starts_at ? formatDate(e.starts_at) : ""} · {e.venue}
+                </p>
+                {e.starts_at && <Countdown at={e.starts_at} />}
+                {registeredIds.has(e.id) && (
+                  <span className="mt-2 inline-block rounded-md bg-indigo-400/10 px-2 py-0.5 text-xs font-semibold text-indigo-200 ring-1 ring-indigo-400/40">
+                    Registered
+                  </span>
+                )}
+              </a>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section>
+        <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-bold tracking-tight">Tickets</h2>
           <a href="/tickets" className="text-sm text-indigo-300 hover:text-indigo-200">
             All tickets →
@@ -416,72 +482,6 @@ export default function DashboardPage() {
           </div>
         )}
         {ticketMsg && <p className="mt-3 text-sm text-slate-400">{ticketMsg}</p>}
-      </section>
-
-      <section>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold tracking-tight">Announcements</h2>
-          <a href="/events" className="text-sm text-indigo-300 hover:text-indigo-200">
-            View all →
-          </a>
-        </div>
-        {upcoming.length === 0 ? (
-          <p className="text-slate-500">Nothing scheduled yet.</p>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {upcoming.map((e) => (
-              <a
-                key={e.id}
-                href={`/event?id=${e.id}`}
-                className="card card-ring group rounded-2xl p-5 transition-all hover:-translate-y-0.5 hover:bg-white/[0.07]"
-              >
-                <div className="flex items-center justify-between">
-                  <span className={`category-chip ring-1 ${categoryClass(e.category)}`}>
-                    {e.category}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-500">
-                      {e.starts_at
-                        ? new Date(e.starts_at).toLocaleTimeString(undefined, {
-                            hour: "numeric",
-                            minute: "2-digit",
-                          })
-                        : ""}
-                    </span>
-                    <button
-                      onClick={(ev) => {
-                        ev.preventDefault();
-                        ev.stopPropagation();
-                        pinEvent(e);
-                      }}
-                      aria-label={pinnedIds.has(e.id) ? "Added to calendar" : "Add to calendar"}
-                      title={pinnedIds.has(e.id) ? "Added to calendar" : "Add to calendar"}
-                      className={`flex h-6 w-6 items-center justify-center rounded-full text-sm font-bold transition-colors ${
-                        pinnedIds.has(e.id)
-                          ? "bg-indigo-400/20 text-indigo-200 ring-1 ring-indigo-400/40"
-                          : "bg-white/10 text-slate-200 ring-1 ring-white/20 hover:bg-indigo-500 hover:text-white"
-                      }`}
-                    >
-                      {pinnedIds.has(e.id) ? "✓" : "+"}
-                    </button>
-                  </div>
-                </div>
-                <h3 className="mt-3 font-semibold leading-snug text-slate-100 group-hover:text-white">
-                  {e.title}
-                </h3>
-                <p className="mt-1 text-sm text-slate-400">
-                  {e.starts_at ? formatDate(e.starts_at) : ""} · {e.venue}
-                </p>
-                {e.starts_at && <Countdown at={e.starts_at} />}
-                {registeredIds.has(e.id) && (
-                  <span className="mt-2 inline-block rounded-md bg-indigo-400/10 px-2 py-0.5 text-xs font-semibold text-indigo-200 ring-1 ring-indigo-400/40">
-                    Registered
-                  </span>
-                )}
-              </a>
-            ))}
-          </div>
-        )}
       </section>
 
       {tbd.length > 0 && (
