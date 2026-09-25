@@ -325,6 +325,11 @@ export default function EventCalendar() {
               }).catch((err) => setFlash({ msg: err.message, ok: false }));
             }}
             eventDidMount={(arg) => {
+              const bg = arg.event.backgroundColor;
+              if (bg) {
+                arg.el.style.backgroundColor = bg;
+                arg.el.style.borderColor = bg;
+              }
               if (!arg.event.start) return;
               arg.el.title = arg.event.start.toLocaleString(undefined, {
                 month: "short",
