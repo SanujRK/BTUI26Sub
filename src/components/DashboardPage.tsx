@@ -228,27 +228,32 @@ export default function DashboardPage() {
               No events on {DAY_NAMES[day]}s yet.
             </p>
           ) : (
-            <div className="space-y-2">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {shown.map((e) =>
                 e.pinned ? (
                   <div
                     key={e.id}
-                    className="flex items-center gap-3 rounded-xl bg-white/[0.04] px-4 py-3 ring-1 ring-white/10"
+                    className="card card-ring rounded-xl bg-white/[0.04] p-4"
                   >
-                    <span
-                      className="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold text-[#0f172a]"
-                      style={{ backgroundColor: e.color ?? "#818cf8" }}
-                    >
-                      Custom
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold text-slate-100">{e.title}</p>
-                      <p className="truncate text-xs text-slate-500">
-                        Pinned · {formatDate(e.starts_at)} · {e.venue}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 flex-col items-end gap-0.5">
+                    <div className="flex items-center justify-between">
+                      <span
+                        className="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold text-[#0f172a]"
+                        style={{ backgroundColor: e.color ?? "#818cf8" }}
+                      >
+                        Custom
+                      </span>
                       <span className="text-xs text-slate-500">{timeStr(e.starts_at)}</span>
+                    </div>
+                    <h3 className="mt-3 truncate font-semibold leading-snug text-slate-100">
+                      {e.title}
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-400">
+                      {formatDate(e.starts_at)} · {e.venue}
+                    </p>
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <span className="inline-block rounded-md bg-amber-400/10 px-2 py-0.5 text-xs font-semibold text-amber-200 ring-1 ring-amber-400/40">
+                        Pinned
+                      </span>
                       <Countdown at={e.starts_at} />
                     </div>
                   </div>
@@ -256,20 +261,28 @@ export default function DashboardPage() {
                   <a
                     key={e.id}
                     href={`/event?id=${e.id}`}
-                    className="flex items-center gap-3 rounded-xl bg-white/[0.04] px-4 py-3 ring-1 ring-white/10 transition-colors hover:bg-white/[0.08]"
+                    className="card card-ring group rounded-xl bg-white/[0.04] p-4 transition-all hover:-translate-y-0.5 hover:bg-white/[0.07]"
                   >
-                    <span className={`category-chip shrink-0 ring-1 ${categoryClass(e.category)}`}>
-                      {e.category}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold text-slate-100">{e.title}</p>
-                      <p className="truncate text-xs text-slate-500">
-                        {registeredIds.has(e.id) ? "Registered · " : ""}
-                        {formatDate(e.starts_at)} · {e.venue}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 flex-col items-end gap-0.5">
+                    <div className="flex items-center justify-between">
+                      <span className={`category-chip shrink-0 ring-1 ${categoryClass(e.category)}`}>
+                        {e.category}
+                      </span>
                       <span className="text-xs text-slate-500">{timeStr(e.starts_at)}</span>
+                    </div>
+                    <h3 className="mt-3 truncate font-semibold leading-snug text-slate-100 group-hover:text-white">
+                      {e.title}
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-400">
+                      {formatDate(e.starts_at)} · {e.venue}
+                    </p>
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      {registeredIds.has(e.id) ? (
+                        <span className="inline-block rounded-md bg-indigo-400/10 px-2 py-0.5 text-xs font-semibold text-indigo-200 ring-1 ring-indigo-400/40">
+                          Registered
+                        </span>
+                      ) : (
+                        <span></span>
+                      )}
                       <Countdown at={e.starts_at} />
                     </div>
                   </a>
