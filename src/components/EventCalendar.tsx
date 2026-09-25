@@ -252,7 +252,8 @@ export default function EventCalendar() {
               setModal({ kind: "create", start: new Date(info.startStr + "T00:00:00").toISOString() });
             }}
             eventReceive={(info) => {
-              const eventId = info.event.extendedProps.eventId as string | undefined;
+              const extEventId = info.event.extendedProps.tbdEventId as string | undefined;
+              const eventId = extEventId || info.event.id || undefined;
               if (!eventId) return;
               saveCustom(
                 (info.event.extendedProps.title as string) ?? "Reminder",
@@ -314,7 +315,7 @@ export default function EventCalendar() {
                   poolDraggables.current.set(
                     t.event_id,
                     new Draggable(node, {
-                      eventData: { title: t.title, eventId: t.event_id },
+                      eventData: { title: t.title, tbdEventId: t.event_id },
                     })
                   );
                 }}
