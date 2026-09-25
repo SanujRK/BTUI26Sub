@@ -28,6 +28,7 @@ type DayEvent = {
   venue: string;
   color?: string;
   pinned?: boolean;
+  ticket?: boolean;
 };
 
 function greetingFor(hour: number, firstName: string) {
@@ -111,8 +112,18 @@ export default function DashboardPage() {
         color: p.color,
         pinned: true,
       }));
-    return [...official, ...custom];
-  }, [items, pins]);
+    const ticketed: DayEvent[] = tickets
+      .filter((t) => t.starts_at)
+      .map((t) => ({
+        id: t.event_id,
+        title: t.title,
+        category: t.category,
+        starts_at: t.starts_at!,
+        venue: t.venue,
+        ticket: true,
+      }));
+    return [...official, ...custom, ...ticketed];
+  }, [items, pins, tickets]);
 
   const byDay = useMemo(() => {
     const map: Record<number, DayEvent[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
@@ -308,6 +319,10 @@ export default function DashboardPage() {
                       {registeredIds.has(e.id) ? (
                         <span className="inline-block rounded-md bg-indigo-400/10 px-2 py-0.5 text-xs font-semibold text-indigo-200 ring-1 ring-indigo-400/40">
                           Registered
+                        </span>
+                      ) : e.ticket ? (
+                        <span className="inline-block rounded-md bg-emerald-400/10 px-2 py-0.5 text-xs font-semibold text-emerald-200 ring-1 ring-emerald-400/40">
+                          Ticket
                         </span>
                       ) : (
                         <span></span>

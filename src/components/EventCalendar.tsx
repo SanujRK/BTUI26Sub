@@ -10,6 +10,7 @@ import {
   getCustomEvents,
   getTbdPool,
   getMyRegistrations,
+  getMyTickets,
   createCustomEvent,
   updateCustomEvent,
   deleteCustomEvent,
@@ -17,6 +18,7 @@ import {
   type CustomEventRow,
   type TbdRegistration,
   type MyRegistration,
+  type TicketView,
 } from "../lib/api";
 import { categoryColorOf } from "../lib/categories";
 
@@ -57,6 +59,7 @@ export default function EventCalendar() {
   const [myRegs, setMyRegs] = useState<MyRegistration[]>([]);
   const [customEvents, setCustomEvents] = useState<CustomEventRow[]>([]);
   const [pool, setPool] = useState<TbdRegistration[]>([]);
+  const [tickets, setTickets] = useState<TicketView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState<AnnouncementNotice[] | null>(null);
@@ -77,16 +80,18 @@ export default function EventCalendar() {
       .then(setEvents)
       .catch((err) => setError(err.message));
     if (user) {
-      Promise.all([getCustomEvents(), getTbdPool(), getMyRegistrations()])
-        .then(([c, p, r]) => {
+      Promise.all([getCustomEvents(), getTbdPool(), getMyRegistrations(), getMyTickets()])
+        .then(([c, p, r, t]) => {
           setCustomEvents(c);
           setPool(p);
           setMyRegs(r);
+          setTickets(t);
         })
         .catch((err) => setError(err.message));
     } else {
       setMyRegs([]);
       setPool([]);
+      setTickets([]);
     }
     setLoading(false);
   }, [user]);
@@ -171,21 +176,28 @@ export default function EventCalendar() {
     return <p className="py-16 text-center text-slate-500">Loading calendar…</p>;
   }
 
-  const officialEvents = myRegs
-    .filter((e) => e.starts_at)
+  const myEventIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const r of myRegs) ids.add(r.event_id);
+    for (const t of tickets) ids.add(t.event_id);
+    return ids;
+  }, [myRegs, tickets]);
+
+  const officialEvents = events
+    .filter((e) => e.starts_at && myEventIds.has(e.id))
     .filter((e) => {
       if (category && e.category !== category) return false;
       if (query && !e.title.toLowerCase().includes(query.toLowerCase())) return false;
       return true;
     })
     .map((e) => ({
-      id: e.event_id,
+      id: e.id,
       title: e.title,
       start: e.starts_at!,
       editable: false,
       backgroundColor: categoryColorOf(e.category),
       borderColor: categoryColorOf(e.category),
-      extendedProps: { url: `/event?id=${e.event_id}` },
+      extendedProps: { url: `/event?id=${e.id}` },
     }));
 
   const reminderEvents = customEvents
