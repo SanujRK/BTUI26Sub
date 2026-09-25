@@ -35,6 +35,23 @@ function greetingFor(hour: number, firstName: string) {
 const timeStr = (iso: string) =>
   new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 
+function Countdown({ at }: { at: string }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, []);
+  const diff = new Date(at).getTime() - now;
+  if (!Number.isFinite(diff)) return null;
+  if (diff <= 0) return <span className="text-xs tabular-nums text-slate-500">Started</span>;
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  const label = d > 0 ? `${d}d ${h}h ${m}m` : h > 0 ? `${h}h ${m}m` : `${m}m ${s}s`;
+  return <span className="text-xs tabular-nums text-violet-300/90">{label} left</span>;
+}
+
 export default function DashboardPage() {
   const { user } = useUser();
   const [items, setItems] = useState<MyRegistration[]>([]);
@@ -230,7 +247,10 @@ export default function DashboardPage() {
                         Pinned · {formatDate(e.starts_at)} · {e.venue}
                       </p>
                     </div>
-                    <span className="shrink-0 text-xs text-slate-500">{timeStr(e.starts_at)}</span>
+                    <div className="flex shrink-0 flex-col items-end gap-0.5">
+                      <span className="text-xs text-slate-500">{timeStr(e.starts_at)}</span>
+                      <Countdown at={e.starts_at} />
+                    </div>
                   </div>
                 ) : (
                   <a
@@ -248,7 +268,10 @@ export default function DashboardPage() {
                         {formatDate(e.starts_at)} · {e.venue}
                       </p>
                     </div>
-                    <span className="shrink-0 text-xs text-slate-500">{timeStr(e.starts_at)}</span>
+                    <div className="flex shrink-0 flex-col items-end gap-0.5">
+                      <span className="text-xs text-slate-500">{timeStr(e.starts_at)}</span>
+                      <Countdown at={e.starts_at} />
+                    </div>
                   </a>
                 )
               )}
@@ -319,6 +342,7 @@ export default function DashboardPage() {
                 <p className="mt-1 text-sm text-slate-400">
                   {e.starts_at ? formatDate(e.starts_at) : ""} · {e.venue}
                 </p>
+                {e.starts_at && <Countdown at={e.starts_at} />}
                 {registeredIds.has(e.id) && (
                   <span className="mt-2 inline-block rounded-md bg-indigo-400/10 px-2 py-0.5 text-xs font-semibold text-indigo-200 ring-1 ring-indigo-400/40">
                     Registered
