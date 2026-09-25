@@ -3,8 +3,10 @@ import { useUser } from "../hooks/useUser";
 import {
   getMyRegistrations,
   getAnnouncements,
+  getEvents,
   type MyRegistration,
   type Announcement,
+  type EventView,
 } from "../lib/api";
 import { formatDate } from "../lib/format";
 import { categoryClass } from "../lib/categories";
@@ -22,6 +24,7 @@ function greetingFor(hour: number, firstName: string) {
 export default function DashboardPage() {
   const { user } = useUser();
   const [items, setItems] = useState<MyRegistration[]>([]);
+  const [events, setEvents] = useState<EventView[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [day, setDay] = useState<number>(() =>
@@ -34,10 +37,11 @@ export default function DashboardPage() {
       setLoading(false);
       return;
     }
-    Promise.all([getMyRegistrations(), getAnnouncements()])
-      .then(([regs, anns]) => {
+    Promise.all([getMyRegistrations(), getAnnouncements(), getEvents()])
+      .then(([regs, anns, evs]) => {
         setItems(regs);
         setAnnouncements(anns);
+        setEvents(evs);
         const next = regs
           .filter((r) => r.starts_at && new Date(r.starts_at).getTime() >= Date.now() - 86400000)
           .sort((a, b) => a.starts_at!.localeCompare(b.starts_at!))[0];
@@ -65,6 +69,17 @@ export default function DashboardPage() {
   const tbd = items.filter((r) => !r.starts_at);
   const selected = byDay[day] ?? [];
   const shown = expanded ? selected : selected.slice(0, 3);
+
+  const registeredIds = useMemo(() => new Set(items.map((r) => r.event_id)), [items]);
+
+  const upcoming = useMemo(
+    () =>
+      events
+        .filter((e) => e.starts_at && new Date(e.starts_at).getTime() >= Date.now() - 86400000)
+        .sort((a, b) => a.starts_at!.localeCompare(b.starts_at!))
+        .slice(0, 6),
+    [events]
+  );
 
   if (loading) {
     return <p className="py-16 text-center text-slate-500">Loading dashboard…</p>;
@@ -183,6 +198,53 @@ export default function DashboardPage() {
           >
             {expanded ? "Show less" : `Show more (${selected.length - 3} more)`}
           </button>
+        )}
+      </section>
+
+      <section>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-bold tracking-tight">Upcoming events</h2>
+          <a href="/events" className="text-sm text-indigo-300 hover:text-indigo-200">
+            Calendar →
+          </a>
+        </div>
+        {upcoming.length === 0 ? (
+          <p className="text-slate-500">Nothing scheduled yet.</p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {upcoming.map((e) => (
+              <a
+                key={e.id}
+                href={`/event?id=${e.id}`}
+                className="card card-ring group rounded-2xl p-5 transition-all hover:-translate-y-0.5 hover:bg-white/[0.07]"
+              >
+                <div className="flex items-center justify-between">
+                  <span className={`category-chip ring-1 ${categoryClass(e.category)}`}>
+                    {e.category}
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    {e.starts_at
+                      ? new Date(e.starts_at).toLocaleTimeString(undefined, {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })
+                      : ""}
+                  </span>
+                </div>
+                <h3 className="mt-3 font-semibold leading-snug text-slate-100 group-hover:text-white">
+                  {e.title}
+                </h3>
+                <p className="mt-1 text-sm text-slate-400">
+                  {e.starts_at ? formatDate(e.starts_at) : ""} · {e.venue}
+                </p>
+                {registeredIds.has(e.id) && (
+                  <span className="mt-2 inline-block rounded-md bg-indigo-400/10 px-2 py-0.5 text-xs font-semibold text-indigo-200 ring-1 ring-indigo-400/40">
+                    Registered
+                  </span>
+                )}
+              </a>
+            ))}
+          </div>
         )}
       </section>
 
