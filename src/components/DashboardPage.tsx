@@ -1,13 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { useUser } from "../hooks/useUser";
 import {
   getMyRegistrations,
   getCustomEvents,
   getEvents,
+  getMyTickets,
+  buyTicket,
   createCustomEvent,
   type MyRegistration,
   type EventView,
   type CustomEventRow,
+  type TicketView,
 } from "../lib/api";
 import { formatDate } from "../lib/format";
 import { categoryClass } from "../lib/categories";
@@ -57,22 +61,26 @@ export default function DashboardPage() {
   const [items, setItems] = useState<MyRegistration[]>([]);
   const [events, setEvents] = useState<EventView[]>([]);
   const [pins, setPins] = useState<CustomEventRow[]>([]);
+  const [tickets, setTickets] = useState<TicketView[]>([]);
   const [loading, setLoading] = useState(true);
   const [day, setDay] = useState<number>(() =>
     typeof window === "undefined" ? -1 : (new Date().getDay() + 6) % 7
   );
   const [expanded, setExpanded] = useState(false);
+  const [ticketMsg, setTicketMsg] = useState("");
+  const [ticketBusy, setTicketBusy] = useState("");
 
   useEffect(() => {
     if (!user) {
       setLoading(false);
       return;
     }
-    Promise.all([getMyRegistrations(), getCustomEvents(), getEvents()])
-      .then(([regs, cst, evs]) => {
+    Promise.all([getMyRegistrations(), getCustomEvents(), getEvents(), getMyTickets()])
+      .then(([regs, cst, evs, tks]) => {
         setItems(regs);
         setPins(cst);
         setEvents(evs);
+        setTickets(tks);
         const next = regs
           .filter((r) => r.starts_at && new Date(r.starts_at).getTime() >= Date.now() - 86400000)
           .sort((a, b) => a.starts_at!.localeCompare(b.starts_at!))[0];
@@ -156,6 +164,27 @@ export default function DashboardPage() {
         .slice(0, 6),
     [events, registeredIds]
   );
+
+  const ownedEventIds = useMemo(() => new Set(tickets.map((t) => t.event_id)), [tickets]);
+  const buyable = events.filter((e) => e.is_ticketed && !ownedEventIds.has(e.id));
+
+  const priceOf = (e: EventView) =>
+    e.ticket_price > 0
+      ? e.ticket_price % 1 === 0
+        ? `$${e.ticket_price}`
+        : `$${e.ticket_price.toFixed(2)}`
+      : "Free";
+
+  const buy = async (e: EventView) => {
+    setTicketBusy(e.id);
+    setTicketMsg("");
+    const res = await buyTicket(e.id);
+    setTicketMsg(res.message);
+    setTicketBusy("");
+    if (res.ok || res.message === "ticket already owned") {
+      setTickets(await getMyTickets());
+    }
+  };
 
   if (loading) {
     return <p className="py-16 text-center text-slate-500">Loading dashboard…</p>;
@@ -299,6 +328,94 @@ export default function DashboardPage() {
             </button>
           )}
         </div>
+      </section>
+
+      <section>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-bold tracking-tight">Tickets</h2>
+          <a href="/tickets" className="text-sm text-indigo-300 hover:text-indigo-200">
+            All tickets →
+          </a>
+        </div>
+
+        {tickets.length > 0 && (
+          <div className="mb-5">
+            <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-slate-400">
+              Owned
+            </h3>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {tickets.map((t) => (
+                <div
+                  key={t.id}
+                  className="card card-ring flex items-center justify-between gap-3 rounded-xl p-4"
+                >
+                  <div className="min-w-0">
+                    <span className={`category-chip ring-1 ${categoryClass(t.category)}`}>
+                      {t.category}
+                    </span>
+                    <p className="mt-1.5 truncate font-semibold text-slate-100">{t.title}</p>
+                    <p className="truncate text-xs text-slate-500">
+                      {t.starts_at
+                        ? new Date(t.starts_at).toLocaleDateString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                          })
+                        : "Date TBD"}{" "}
+                      · {t.venue}
+                    </p>
+                  </div>
+                  <div className="shrink-0 rounded-lg bg-white p-1">
+                    <QRCodeSVG value={`SEH-TICKET:${t.id}`} size={56} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-slate-400">
+          Available
+        </h3>
+        {buyable.length === 0 ? (
+          <p className="text-sm text-slate-500">
+            {tickets.length > 0
+              ? "You already own tickets to every ticketed event."
+              : "No ticketed events up for grabs right now."}
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {buyable.map((e) => (
+              <div key={e.id} className="card card-ring flex flex-col rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <span className={`category-chip ring-1 ${categoryClass(e.category)}`}>
+                    {e.category}
+                  </span>
+                  <span className="text-xs text-slate-500">{priceOf(e)}</span>
+                </div>
+                <h4 className="mt-2 truncate font-semibold text-slate-100">{e.title}</h4>
+                <p className="mt-1 truncate text-xs text-slate-500">
+                  {e.starts_at
+                    ? new Date(e.starts_at).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })
+                    : "Date TBD"}{" "}
+                  · {e.venue}
+                </p>
+                <div className="mt-auto pt-3">
+                  <button
+                    onClick={() => buy(e)}
+                    disabled={ticketBusy === e.id}
+                    className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50"
+                  >
+                    {ticketBusy === e.id ? "Buying…" : "Buy ticket"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {ticketMsg && <p className="mt-3 text-sm text-slate-400">{ticketMsg}</p>}
       </section>
 
       <section>
