@@ -81,9 +81,10 @@ export default function DashboardPage() {
     () =>
       events
         .filter((e) => e.starts_at && new Date(e.starts_at).getTime() >= Date.now() - 86400000)
+        .filter((e) => !registeredIds.has(e.id))
         .sort((a, b) => a.starts_at!.localeCompare(b.starts_at!))
         .slice(0, 6),
-    [events]
+    [events, registeredIds]
   );
 
   if (loading) {
@@ -205,9 +206,9 @@ export default function DashboardPage() {
 
       <section>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold tracking-tight">Upcoming events</h2>
+          <h2 className="text-xl font-bold tracking-tight">Announcements</h2>
           <a href="/events" className="text-sm text-indigo-300 hover:text-indigo-200">
-            Calendar →
+            View all →
           </a>
         </div>
         {upcoming.length === 0 ? (
@@ -273,30 +274,6 @@ export default function DashboardPage() {
           </div>
         </section>
       )}
-
-      <section>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold tracking-tight">Announcements</h2>
-          <a href="/announcements" className="text-sm text-indigo-300 hover:text-indigo-200">
-            View all →
-          </a>
-        </div>
-        {announcements.length === 0 ? (
-          <p className="text-slate-500">Nothing announced yet.</p>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {announcements.slice(0, 4).map((a) => (
-              <article key={a.id} className="card card-ring rounded-2xl p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="font-semibold">{a.title}</h3>
-                  <span className="text-xs text-slate-500">{formatDate(a.created_at)}</span>
-                </div>
-                <p className="mt-1 text-sm text-slate-400">{a.body}</p>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
     </div>
   );
 }
