@@ -153,14 +153,6 @@ export default function DashboardPage() {
       </section>
 
       <section>
-        <h2 className="mb-4 text-xl font-bold tracking-tight">
-          {DAY_NAMES[day]}
-          {selected.length > 0 && (
-            <span className="ml-2 text-sm font-medium text-slate-500">
-              {selected.length} event{selected.length === 1 ? "" : "s"}
-            </span>
-          )}
-        </h2>
         {shown.length === 0 ? (
           <p className="card card-ring rounded-2xl p-6 text-center text-sm text-slate-500">
             No events on {DAY_NAMES[day]}s yet.
