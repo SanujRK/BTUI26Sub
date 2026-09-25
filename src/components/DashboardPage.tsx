@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useUser } from "../hooks/useUser";
 import {
   getMyRegistrations,
-  getAnnouncements,
+  getCustomEvents,
   getEvents,
   type MyRegistration,
-  type Announcement,
   type EventView,
+  type CustomEventRow,
 } from "../lib/api";
 import { formatDate } from "../lib/format";
 import { categoryClass } from "../lib/categories";
@@ -25,7 +25,7 @@ export default function DashboardPage() {
   const { user } = useUser();
   const [items, setItems] = useState<MyRegistration[]>([]);
   const [events, setEvents] = useState<EventView[]>([]);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [pins, setPins] = useState<CustomEventRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [day, setDay] = useState<number>(() =>
     typeof window === "undefined" ? -1 : (new Date().getDay() + 6) % 7
@@ -37,10 +37,10 @@ export default function DashboardPage() {
       setLoading(false);
       return;
     }
-    Promise.all([getMyRegistrations(), getAnnouncements(), getEvents()])
-      .then(([regs, anns, evs]) => {
+    Promise.all([getMyRegistrations(), getCustomEvents(), getEvents()])
+      .then(([regs, cst, evs]) => {
         setItems(regs);
-        setAnnouncements(anns);
+        setPins(cst);
         setEvents(evs);
         const next = regs
           .filter((r) => r.starts_at && new Date(r.starts_at).getTime() >= Date.now() - 86400000)
@@ -66,7 +66,12 @@ export default function DashboardPage() {
     return map;
   }, [events]);
 
-  const tbd = items.filter((r) => !r.starts_at);
+  const pinnedIds = useMemo(
+    () => new Set(pins.map((p) => p.event_id).filter((id): id is string => !!id)),
+    [pins]
+  );
+
+  const tbd = items.filter((r) => !r.starts_at && !pinnedIds.has(r.event_id));
   const selected = byDay[day] ?? [];
   const shown = expanded ? selected : selected.slice(0, 3);
 
