@@ -84,6 +84,11 @@ export default function EventCalendar() {
     [events]
   );
 
+  const pinnedEventIds = useMemo(
+    () => new Set(customEvents.map((c) => c.event_id).filter((id): id is string => !!id)),
+    [customEvents]
+  );
+
   useEffect(() => {
     const announced = customEvents.filter((c) => {
       if (c.notified_at || !c.event_id) return false;
@@ -157,11 +162,6 @@ export default function EventCalendar() {
       borderColor: c.color,
       extendedProps: { isCustom: true, customId: c.id },
     }));
-
-  const pinnedEventIds = useMemo(
-    () => new Set(customEvents.map((c) => c.event_id).filter((id): id is string => !!id)),
-    [customEvents]
-  );
 
   const poolToShow = pool.filter((t) => !pinnedEventIds.has(t.event_id));
 
