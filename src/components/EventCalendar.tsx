@@ -29,6 +29,12 @@ function dateOnly(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+function parseDateStr(s: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  if (!m) return null;
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0);
+}
+
 function timeOnly(d: Date): string {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
@@ -284,7 +290,15 @@ export default function EventCalendar() {
             eventReceive={(info) => {
               const extEventId = info.event.extendedProps.tbdEventId as string | undefined;
               const eventId = extEventId || info.event.id || undefined;
-              const date = info.date instanceof Date ? info.date : null;
+              let date = info.date instanceof Date ? info.date : null;
+              if (!date) {
+                date =
+                  parseDateStr(info.dateStr) ??
+                  parseDateStr(info.event.startStr) ??
+                  calendarRef.current?.getApi().getDate() ??
+                  null;
+              }
+              const title = (info.event.extendedProps.title as string) ?? "Reminder";
               info.event.remove();
               if (!eventId || !date) {
                 setFlash({
@@ -296,7 +310,7 @@ export default function EventCalendar() {
               setModal({
                 kind: "tbd",
                 eventId,
-                title: (info.event.extendedProps.title as string) ?? "Reminder",
+                title,
                 start: `${dateOnly(date)}T12:00:00`,
               });
             }}
