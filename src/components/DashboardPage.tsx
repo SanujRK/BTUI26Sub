@@ -32,6 +32,9 @@ function greetingFor(hour: number, firstName: string) {
   return `Good evening, ${firstName}`;
 }
 
+const timeStr = (iso: string) =>
+  new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+
 export default function DashboardPage() {
   const { user } = useUser();
   const [items, setItems] = useState<MyRegistration[]>([]);
@@ -201,72 +204,65 @@ export default function DashboardPage() {
             );
           })}
         </div>
-      </section>
-
-      <section>
-        {shown.length === 0 ? (
-          <p className="card card-ring rounded-2xl p-6 text-center text-sm text-slate-500">
-            No events on {DAY_NAMES[day]}s yet.
-          </p>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {shown.map((e) => (
-              <a
-                key={e.id}
-                href={`/event?id=${e.id}`}
-                className="card card-ring group rounded-2xl p-5 transition-all hover:-translate-y-0.5 hover:bg-white/[0.07]"
-              >
-                <div className="flex items-center justify-between">
-                  {e.pinned ? (
+        <div className="mt-5 border-t border-white/10" aria-hidden="true" />
+        <div className="mt-4">
+          {shown.length === 0 ? (
+            <p className="py-4 text-center text-sm text-slate-500">
+              No events on {DAY_NAMES[day]}s yet.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {shown.map((e) =>
+                e.pinned ? (
+                  <div
+                    key={e.id}
+                    className="flex items-center gap-3 rounded-xl bg-white/[0.04] px-4 py-3 ring-1 ring-white/10"
+                  >
                     <span
-                      className="rounded-full px-2 py-0.5 text-xs font-semibold text-[#0f172a] ring-1 ring-white/10"
+                      className="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold text-[#0f172a]"
                       style={{ backgroundColor: e.color ?? "#818cf8" }}
                     >
                       Custom
                     </span>
-                  ) : (
-                    <span className={`category-chip ring-1 ${categoryClass(e.category)}`}>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold text-slate-100">{e.title}</p>
+                      <p className="truncate text-xs text-slate-500">
+                        Pinned · {formatDate(e.starts_at)} · {e.venue}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-xs text-slate-500">{timeStr(e.starts_at)}</span>
+                  </div>
+                ) : (
+                  <a
+                    key={e.id}
+                    href={`/event?id=${e.id}`}
+                    className="flex items-center gap-3 rounded-xl bg-white/[0.04] px-4 py-3 ring-1 ring-white/10 transition-colors hover:bg-white/[0.08]"
+                  >
+                    <span className={`category-chip shrink-0 ring-1 ${categoryClass(e.category)}`}>
                       {e.category}
                     </span>
-                  )}
-                  <span className="text-xs text-slate-500">
-                    {e.starts_at
-                      ? new Date(e.starts_at).toLocaleTimeString(undefined, {
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })
-                      : ""}
-                  </span>
-                </div>
-                <h3 className="mt-3 font-semibold leading-snug text-slate-100 group-hover:text-white">
-                  {e.title}
-                </h3>
-                <p className="mt-1 text-sm text-slate-400">
-                  {e.starts_at ? formatDate(e.starts_at) : ""} · {e.venue}
-                </p>
-                {e.pinned ? (
-                  <span className="mt-2 inline-block rounded-md bg-amber-400/10 px-2 py-0.5 text-xs font-semibold text-amber-200 ring-1 ring-amber-400/40">
-                    Pinned
-                  </span>
-                ) : (
-                  registeredIds.has(e.id) && (
-                    <span className="mt-2 inline-block rounded-md bg-indigo-400/10 px-2 py-0.5 text-xs font-semibold text-indigo-200 ring-1 ring-indigo-400/40">
-                      Registered
-                    </span>
-                  )
-                )}
-              </a>
-            ))}
-          </div>
-        )}
-        {selected.length > 3 && (
-          <button
-            onClick={() => setExpanded((v) => !v)}
-            className="mt-3 text-sm font-semibold text-indigo-300 hover:text-indigo-200"
-          >
-            {expanded ? "Show less" : `Show more (${selected.length - 3} more)`}
-          </button>
-        )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold text-slate-100">{e.title}</p>
+                      <p className="truncate text-xs text-slate-500">
+                        {registeredIds.has(e.id) ? "Registered · " : ""}
+                        {formatDate(e.starts_at)} · {e.venue}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-xs text-slate-500">{timeStr(e.starts_at)}</span>
+                  </a>
+                )
+              )}
+            </div>
+          )}
+          {selected.length > 3 && (
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="mt-3 text-sm font-semibold text-indigo-300 hover:text-indigo-200"
+            >
+              {expanded ? "Show less" : `Show more (${selected.length - 3} more)`}
+            </button>
+          )}
+        </div>
       </section>
 
       <section>
