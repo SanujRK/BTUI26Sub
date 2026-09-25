@@ -113,7 +113,7 @@ export async function getTbdPool(): Promise<TbdRegistration[]> {
 export async function createCustomEvent(input: {
   title: string;
   color: string;
-  starts_at: string;
+  starts_at: string | null;
   event_id?: string | null;
 }): Promise<void> {
   const client = requireClient();

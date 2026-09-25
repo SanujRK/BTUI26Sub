@@ -69,7 +69,7 @@ export default function AnnouncementsFeed() {
   };
 
   const pinOfficial = async (ev: EventView) => {
-    if (pinnedIds.has(ev.id) || !ev.starts_at) return;
+    if (pinnedIds.has(ev.id)) return;
     await createCustomEvent({
       title: ev.title,
       color: "#818cf8",
@@ -168,7 +168,7 @@ export default function AnnouncementsFeed() {
                     <span className="rounded-md bg-white/5 px-2 py-0.5 text-xs font-semibold text-slate-400 ring-1 ring-white/10">
                       {e.category}
                     </span>
-                    {PinButton({ pinned: pinnedIds.has(e.id), onPin: () => undefined })}
+                    {PinButton({ pinned: pinnedIds.has(e.id), onPin: () => pinOfficial(e) })}
                   </div>
                   <h3 className="mt-3 font-semibold leading-snug text-slate-100 group-hover:text-white">
                     {e.title}

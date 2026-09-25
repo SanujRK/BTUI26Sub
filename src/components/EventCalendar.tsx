@@ -112,9 +112,11 @@ export default function EventCalendar() {
     const minValid = new Date("2000-01-01T00:00:00Z").getTime();
     const ids = new Set<string>();
     for (const c of customEvents) {
-      if (!c.event_id || !c.starts_at) continue;
-      const t = new Date(c.starts_at).getTime();
-      if (Number.isNaN(t) || t < minValid) continue;
+      if (!c.event_id) continue;
+      if (c.starts_at) {
+        const t = new Date(c.starts_at).getTime();
+        if (!Number.isNaN(t) && t < minValid) continue;
+      }
       ids.add(c.event_id);
     }
     return ids;
