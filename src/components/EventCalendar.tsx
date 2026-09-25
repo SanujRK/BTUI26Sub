@@ -29,8 +29,8 @@ function dateOnly(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-function dayStartIso(d: Date): string {
-  return new Date(`${dateOnly(d)}T12:00:00`).toISOString();
+function timeOnly(d: Date): string {
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
 type ModalState =
@@ -176,16 +176,20 @@ export default function EventCalendar() {
 
   const reminderEvents = customEvents
     .filter((c) => c.starts_at)
-    .map((c) => ({
-      id: `custom-${c.id}`,
-      title: c.title,
-      start: c.starts_at,
-      allDay: true,
-      editable: true,
-      backgroundColor: c.color,
-      borderColor: c.color,
-      extendedProps: { isCustom: true, customId: c.id },
-    }));
+    .map((c) => {
+      const d = new Date(c.starts_at);
+      const isNoon = d.getHours() === 12 && d.getMinutes() === 0;
+      return {
+        id: `custom-${c.id}`,
+        title: c.title,
+        start: c.starts_at,
+        allDay: isNoon,
+        editable: true,
+        backgroundColor: c.color,
+        borderColor: c.color,
+        extendedProps: { isCustom: true, customId: c.id },
+      };
+    });
 
   const poolToShow = pool.filter((t) => !pinnedEventIds.has(t.event_id));
 
@@ -281,27 +285,29 @@ export default function EventCalendar() {
               const extEventId = info.event.extendedProps.tbdEventId as string | undefined;
               const eventId = extEventId || info.event.id || undefined;
               const date = info.date instanceof Date ? info.date : null;
+              info.event.remove();
               if (!eventId || !date) {
-                info.event.remove();
                 setFlash({
                   msg: !eventId ? "Could not identify the pinned event." : "Could not read the drop date.",
                   ok: false,
                 });
                 return;
               }
-              saveCustom(
-                (info.event.extendedProps.title as string) ?? "Reminder",
-                PALETTE[0],
-                dayStartIso(date),
-                eventId
-              ).catch((err) => setFlash({ msg: err.message, ok: false }));
-              info.event.remove();
+              setModal({
+                kind: "tbd",
+                eventId,
+                title: (info.event.extendedProps.title as string) ?? "Reminder",
+                start: `${dateOnly(date)}T12:00:00`,
+              });
             }}
             eventDrop={(info) => {
               const customId = info.event.extendedProps.customId;
               if (!customId || !info.event.start) return;
+              const moved = info.event.start;
               updateCustomEvent(customId as string, {
-                starts_at: dayStartIso(info.event.start),
+                starts_at: new Date(
+                  `${dateOnly(moved)}T${timeOnly(moved)}:00`
+                ).toISOString(),
               }).catch((err) => setFlash({ msg: err.message, ok: false }));
             }}
             eventClick={(info) => {
@@ -361,7 +367,7 @@ export default function EventCalendar() {
                     kind: "tbd",
                     eventId: t.event_id,
                     title: t.title,
-                    start: new Date().toISOString(),
+                    start: new Date(dateOnly(new Date()) + "T12:00:00").toISOString(),
                   });
                 }}
               >
@@ -464,18 +470,23 @@ function CustomModal({
   const [title, setTitle] = useState(defaultTitle);
   const [color, setColor] = useState(defaultColor);
   const [start, setStart] = useState(defaultStart.slice(0, 10));
+  const [time, setTime] = useState(() => {
+    const d = new Date(defaultStart);
+    return Number.isNaN(d.getTime()) ? "12:00" : timeOnly(d);
+  });
   const [busy, setBusy] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
   const submit = async () => {
     if (!title.trim()) return;
+    const t = /^\d{2}:\d{2}$/.test(time.trim()) ? time.trim() : "12:00";
     setBusy(true);
     setErrorMsg("");
     try {
       await onSave(
         title.trim(),
         color,
-        new Date(start.slice(0, 10) + "T12:00:00").toISOString()
+        new Date(start.slice(0, 10) + "T" + t + ":00").toISOString()
       );
     } catch (e) {
       setErrorMsg((e as Error)?.message ?? "Save failed. Try again.");
@@ -505,14 +516,25 @@ function CustomModal({
             />
           </div>
         )}
-        <div className="mt-4">
-          <label className="text-sm font-semibold text-slate-400">Date</label>
-          <input
-            type="date"
-            value={start}
-            onChange={(e) => setStart(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400"
-          />
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-sm font-semibold text-slate-400">Time</label>
+            <input
+              type="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400 [color-scheme:dark]"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-semibold text-slate-400">Date</label>
+            <input
+              type="date"
+              value={start}
+              onChange={(e) => setStart(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400 [color-scheme:dark]"
+            />
+          </div>
         </div>
         <div className="mt-4">
           <label className="text-sm font-semibold text-slate-400">Color</label>
