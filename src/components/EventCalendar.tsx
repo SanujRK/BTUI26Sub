@@ -22,6 +22,17 @@ const CATEGORIES = ["Debate", "Sports", "Exhibition", "Culture", "Tech", "Genera
 
 const PALETTE = ["#818cf8", "#a78bfa", "#34d399", "#38bdf8", "#fb7185", "#22d3ee", "#fbbf24"];
 
+function dateOnly(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function dayStartIso(d: Date): string {
+  return new Date(`${dateOnly(d)}T12:00:00`).toISOString();
+}
+
 type ModalState =
   | { kind: "create"; start: string }
   | { kind: "tbd"; eventId: string; title: string; start: string }
@@ -43,7 +54,7 @@ export default function EventCalendar() {
   const [modal, setModal] = useState<ModalState | null>(null);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
-  const [flash, setFlash] = useState("");
+  const [flash, setFlash] = useState<{ msg: string; ok: boolean } | null>(null);
 
   const isMobile =
     typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
@@ -119,8 +130,14 @@ export default function EventCalendar() {
     eventId: string | null
   ) => {
     await createCustomEvent({ title, color, starts_at: start, event_id: eventId });
-    setFlash("");
     await refresh();
+    setFlash({
+      msg: `Pinned ${title} to ${new Date(start).toLocaleDateString(undefined, {
+        month: "long",
+        day: "numeric",
+      })}.`,
+      ok: true,
+    });
     setModal(null);
   };
 
@@ -169,10 +186,12 @@ export default function EventCalendar() {
     <div className="flex flex-col gap-4">
       {flash && (
         <p
-          onClick={() => setFlash("")}
-          className="cursor-pointer rounded-lg bg-rose-400/10 px-3 py-2 text-sm text-rose-300 ring-1 ring-rose-400/30"
+          onClick={() => setFlash(null)}
+          className={`cursor-pointer rounded-lg px-3 py-2 text-sm ring-1 ${flash.ok
+            ? "bg-indigo-400/10 text-indigo-200 ring-indigo-400/40"
+            : "bg-rose-400/10 text-rose-300 ring-rose-400/30"}`}
         >
-          {flash} <span className="text-rose-400/70">(click to dismiss)</span>
+          {flash.msg} <span className="opacity-70">(click to dismiss)</span>
         </p>
       )}
       <div className="flex flex-wrap items-center gap-2">
@@ -249,31 +268,34 @@ export default function EventCalendar() {
             selectable
             select={(info) => {
               if (!user) return;
-              setModal({ kind: "create", start: new Date(info.startStr + "T00:00:00").toISOString() });
+              setModal({ kind: "create", start: `${info.startStr}T12:00:00` });
             }}
             eventReceive={(info) => {
               const extEventId = info.event.extendedProps.tbdEventId as string | undefined;
               const eventId = extEventId || info.event.id || undefined;
-              const date = info.date instanceof Date ? info.date : new Date("1970-01-01");
-              const start = isNaN(date.getTime()) ? null : date.toISOString();
-              if (!eventId || !start) {
+              const date = info.date instanceof Date ? info.date : null;
+              if (!eventId || !date) {
                 info.event.remove();
-                setFlash(!eventId ? "Could not identify the pinned event." : "Could not read the drop date.");
+                setFlash({
+                  msg: !eventId ? "Could not identify the pinned event." : "Could not read the drop date.",
+                  ok: false,
+                });
                 return;
               }
               saveCustom(
                 (info.event.extendedProps.title as string) ?? "Reminder",
                 PALETTE[0],
-                start,
+                dayStartIso(date),
                 eventId
-              ).catch((err) => setFlash(err.message));
+              ).catch((err) => setFlash({ msg: err.message, ok: false }));
               info.event.remove();
             }}
             eventDrop={(info) => {
               const customId = info.event.extendedProps.customId;
               if (!customId || !info.event.start) return;
-              updateCustomEvent(customId as string, { starts_at: info.event.start.toISOString() })
-                .catch((err) => setError(err.message));
+              updateCustomEvent(customId as string, {
+                starts_at: dayStartIso(info.event.start),
+              }).catch((err) => setFlash({ msg: err.message, ok: false }));
             }}
             eventClick={(info) => {
               if (info.event.extendedProps.isCustom) {
@@ -446,7 +468,7 @@ function CustomModal({
       await onSave(
         title.trim(),
         color,
-        new Date(start.slice(0, 10) + "T00:00:00").toISOString()
+        new Date(start.slice(0, 10) + "T12:00:00").toISOString()
       );
     } catch (e) {
       setErrorMsg((e as Error)?.message ?? "Save failed. Try again.");
