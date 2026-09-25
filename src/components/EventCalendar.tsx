@@ -254,11 +254,17 @@ export default function EventCalendar() {
             eventReceive={(info) => {
               const extEventId = info.event.extendedProps.tbdEventId as string | undefined;
               const eventId = extEventId || info.event.id || undefined;
-              if (!eventId) return;
+              const date = info.date instanceof Date ? info.date : new Date("1970-01-01");
+              const start = isNaN(date.getTime()) ? null : date.toISOString();
+              if (!eventId || !start) {
+                info.event.remove();
+                setFlash(!eventId ? "Could not identify the pinned event." : "Could not read the drop date.");
+                return;
+              }
               saveCustom(
                 (info.event.extendedProps.title as string) ?? "Reminder",
                 PALETTE[0],
-                new Date(info.dateStr + "T00:00:00").toISOString(),
+                start,
                 eventId
               ).catch((err) => setFlash(err.message));
               info.event.remove();
