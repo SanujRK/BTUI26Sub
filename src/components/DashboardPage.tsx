@@ -52,11 +52,11 @@ export default function DashboardPage() {
   }, [user]);
 
   const byDay = useMemo(() => {
-    const map: Record<number, MyRegistration[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
-    for (const r of items) {
-      if (!r.starts_at) continue;
-      const idx = toWeekIndex(r.starts_at);
-      map[idx].push(r);
+    const map: Record<number, EventView[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+    for (const e of events) {
+      if (!e.starts_at) continue;
+      const idx = toWeekIndex(e.starts_at);
+      map[idx].push(e);
     }
     for (const k of Object.keys(map)) {
       map[Number(k)].sort((a, b) =>
@@ -64,7 +64,7 @@ export default function DashboardPage() {
       );
     }
     return map;
-  }, [items]);
+  }, [events]);
 
   const tbd = items.filter((r) => !r.starts_at);
   const selected = byDay[day] ?? [];
@@ -152,41 +152,46 @@ export default function DashboardPage() {
           {DAY_NAMES[day]}
           {selected.length > 0 && (
             <span className="ml-2 text-sm font-medium text-slate-500">
-              {selected.length} registered event{selected.length === 1 ? "" : "s"}
+              {selected.length} event{selected.length === 1 ? "" : "s"}
             </span>
           )}
         </h2>
         {shown.length === 0 ? (
           <p className="card card-ring rounded-2xl p-6 text-center text-sm text-slate-500">
-            Nothing registered on {DAY_NAMES[day]}s yet.
+            No events on {DAY_NAMES[day]}s yet.
           </p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {shown.map((r) => (
+            {shown.map((e) => (
               <a
-                key={r.event_id}
-                href={`/event?id=${r.event_id}`}
+                key={e.id}
+                href={`/event?id=${e.id}`}
                 className="card card-ring group rounded-2xl p-5 transition-all hover:-translate-y-0.5 hover:bg-white/[0.07]"
               >
                 <div className="flex items-center justify-between">
-                  <span className={`category-chip ring-1 ${categoryClass(r.category)}`}>
-                    {r.category}
+                  <span className={`category-chip ring-1 ${categoryClass(e.category)}`}>
+                    {e.category}
                   </span>
                   <span className="text-xs text-slate-500">
-                    {r.starts_at
-                      ? new Date(r.starts_at).toLocaleTimeString(undefined, {
+                    {e.starts_at
+                      ? new Date(e.starts_at).toLocaleTimeString(undefined, {
                           hour: "numeric",
                           minute: "2-digit",
                         })
-                      : "TBD"}
+                      : ""}
                   </span>
                 </div>
                 <h3 className="mt-3 font-semibold leading-snug text-slate-100 group-hover:text-white">
-                  {r.title}
+                  {e.title}
                 </h3>
                 <p className="mt-1 text-sm text-slate-400">
-                  {r.starts_at ? formatDate(r.starts_at) : "Date TBD"} · {r.venue}
+                  {e.starts_at ? formatDate(e.starts_at) : ""} · {e.venue}
                 </p>
+                {registeredIds.has(e.id) && (
+                  <span className="mt-2 inline-block rounded-md bg-indigo-400/10 px-2 py-0.5 text-xs font-semibold text-indigo-200 ring-1 ring-indigo-400/40">
+                    Registered
+                  </span>
+                )}
               </a>
             ))}
           </div>
