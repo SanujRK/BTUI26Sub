@@ -10,11 +10,22 @@ import {
 } from "../lib/api";
 import { useUser } from "../hooks/useUser";
 
+function defaultTime() {
+  const now = new Date();
+  const hm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  const d = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
+    now.getDate()
+  ).padStart(2, "0")}`;
+  return { date: d, time: hm };
+}
+
 export default function AnnouncementsFeed() {
   const { user } = useUser();
   const [items, setItems] = useState<Announcement[]>([]);
   const [registeredIds, setRegisteredIds] = useState<Set<string>>(new Set());
   const [pins, setPins] = useState<CustomEventRow[]>([]);
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [pinModal, setPinModal] = useState<Announcement | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -41,9 +52,12 @@ export default function AnnouncementsFeed() {
 
   const pinnedIds = new Set(pins.map((p) => p.event_id).filter((id): id is string => !!id));
 
+  const isAdded = (a: Announcement) =>
+    a.event_id ? pinnedIds.has(a.event_id) : savedIds.has(a.id);
+
   const pinEvent = async (a: Announcement) => {
-    if (!a.event_id || pinnedIds.has(a.event_id)) return;
-    const ev = await getEvent(a.event_id).catch(() => null);
+    if (pinnedIds.has(a.event_id!)) return;
+    const ev = await getEvent(a.event_id!).catch(() => null);
     if (!ev?.starts_at) return;
     await createCustomEvent({
       title: a.title,
@@ -52,6 +66,13 @@ export default function AnnouncementsFeed() {
       event_id: a.event_id,
     });
     setPins(await getCustomEvents());
+  };
+
+  const pinNoEvent = async (title: string, start: string) => {
+    if (!pinModal) return;
+    await createCustomEvent({ title, color: "#818cf8", starts_at: start });
+    setSavedIds((s) => new Set(s).add(pinModal.id));
+    setPinModal(null);
   };
 
   if (loading) {
@@ -82,19 +103,19 @@ export default function AnnouncementsFeed() {
                 day: "numeric",
               })}
             </time>
-            {user && a.event_id && (
+            {user && (
               <button
-                onClick={() => pinEvent(a)}
-                disabled={pinnedIds.has(a.event_id)}
-                aria-label={pinnedIds.has(a.event_id) ? "Added to calendar" : "Add to calendar"}
-                title={pinnedIds.has(a.event_id) ? "Added to calendar" : "Add to calendar"}
+                onClick={() => (a.event_id ? pinEvent(a) : setPinModal(a))}
+                disabled={isAdded(a)}
+                aria-label={isAdded(a) ? "Added to calendar" : "Add to calendar"}
+                title={isAdded(a) ? "Added to calendar" : "Add to calendar"}
                 className={`ml-auto flex h-6 w-6 items-center justify-center rounded-full text-sm font-bold transition-colors disabled:cursor-default ${
-                  pinnedIds.has(a.event_id)
+                  isAdded(a)
                     ? "bg-indigo-400/20 text-indigo-200 ring-1 ring-indigo-400/40"
                     : "bg-white/10 text-slate-200 ring-1 ring-white/20 hover:bg-indigo-500 hover:text-white"
                 }`}
               >
-                {pinnedIds.has(a.event_id) ? "✓" : "+"}
+                {isAdded(a) ? "✓" : "+"}
               </button>
             )}
             {user && a.event_id && registeredIds.has(a.event_id) && (
@@ -116,6 +137,84 @@ export default function AnnouncementsFeed() {
           )}
         </article>
       ))}
+      {pinModal && (
+        <DateTimeModal
+          title={pinModal.title}
+          onClose={() => setPinModal(null)}
+          onSave={(s) => pinNoEvent(pinModal.title, s)}
+        />
+      )}
+    </div>
+  );
+}
+
+function DateTimeModal({
+  title,
+  onClose,
+  onSave,
+}: {
+  title: string;
+  onClose: () => void;
+  onSave: (start: string) => Promise<void>;
+}) {
+  const init = defaultTime();
+  const [date, setDate] = useState(init.date);
+  const [time, setTime] = useState(init.time);
+  const [busy, setBusy] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const submit = async () => {
+    setBusy(true);
+    setErrorMsg("");
+    try {
+      await onSave(new Date(`${date}T${time || "12:00"}:00`).toISOString());
+    } catch (e) {
+      setErrorMsg((e as Error)?.message ?? "Save failed. Try again.");
+      setBusy(false);
+    }
+  };
+
+  const field =
+    "mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400 [color-scheme:dark]";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div className="card card-ring w-full max-w-md rounded-2xl p-6">
+        <h3 className="text-lg font-bold text-white">Pin "{title}"</h3>
+        <p className="mt-1 text-xs text-slate-500">
+          Add this as a reminder on your calendar.
+        </p>
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-sm font-semibold text-slate-400">Time</label>
+            <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={field} />
+          </div>
+          <div>
+            <label className="text-sm font-semibold text-slate-400">Date</label>
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={field} />
+          </div>
+        </div>
+        {errorMsg && (
+          <p className="mt-4 rounded-lg bg-rose-400/10 px-3 py-2 text-sm text-rose-300 ring-1 ring-rose-400/30">
+            {errorMsg}
+          </p>
+        )}
+        <div className="mt-6 flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="rounded-lg border border-white/15 px-3 py-2 text-sm font-semibold text-slate-300 hover:bg-white/5"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => submit()}
+            disabled={busy}
+            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50"
+          >
+            Add to calendar
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
