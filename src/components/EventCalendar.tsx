@@ -325,6 +325,8 @@ export default function EventCalendar() {
               }).catch((err) => setFlash({ msg: err.message, ok: false }));
             }}
             eventDidMount={(arg) => {
+              const isCustom = !!arg.event.extendedProps.isCustom;
+              if (isCustom) arg.el.style.color = "#0f172a";
               const bg = arg.event.backgroundColor;
               if (bg) {
                 arg.el.style.backgroundColor = bg;
@@ -572,7 +574,7 @@ function CustomModal({
         </div>
         <div className="mt-4">
           <label className="text-sm font-semibold text-slate-400">Color</label>
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             {PALETTE.map((c) => (
               <button
                 key={c}
@@ -584,6 +586,22 @@ function CustomModal({
                 aria-label={c}
               />
             ))}
+            <label
+              title="Custom color"
+              className="relative h-7 w-7 cursor-pointer overflow-hidden rounded-full ring-2 transition-transform hover:scale-105"
+              style={{
+                backgroundColor: /^#[0-9a-fA-F]{6}$/.test(color) ? color : "#818cf8",
+                boxShadow: color.startsWith("#") && !PALETTE.includes(color) ? "0 0 0 2px #fff" : undefined,
+              }}
+            >
+              <input
+                type="color"
+                value={/^#[0-9a-fA-F]{6}$/.test(color) ? color : "#818cf8"}
+                onChange={(e) => setColor(e.target.value)}
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                aria-label="Custom color"
+              />
+            </label>
           </div>
         </div>
         {errorMsg && (
