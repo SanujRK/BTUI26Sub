@@ -298,7 +298,7 @@ export default function EventCalendar() {
                   calendarRef.current?.getApi().getDate() ??
                   null;
               }
-              const title = (info.event.extendedProps.title as string) ?? "Reminder";
+              const title = info.event.title || (info.event.extendedProps.title as string) || "Reminder";
               info.event.remove();
               if (!eventId || !date) {
                 setFlash({
@@ -323,6 +323,21 @@ export default function EventCalendar() {
                   `${dateOnly(moved)}T${timeOnly(moved)}:00`
                 ).toISOString(),
               }).catch((err) => setFlash({ msg: err.message, ok: false }));
+            }}
+            eventDidMount={(arg) => {
+              if (!arg.event.start) return;
+              arg.el.title = arg.event.start.toLocaleString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+              });
+            }}
+            eventContent={(arg) => {
+              const span = document.createElement("span");
+              span.textContent = arg.event.title || "";
+              return { domNodes: [span] };
             }}
             eventClick={(info) => {
               if (info.event.extendedProps.isCustom) {
