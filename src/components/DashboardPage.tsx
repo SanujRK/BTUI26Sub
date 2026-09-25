@@ -15,6 +15,16 @@ const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const toWeekIndex = (d: string) => (new Date(d).getDay() + 6) % 7;
 
+type DayEvent = {
+  id: string;
+  title: string;
+  category: string;
+  starts_at: string;
+  venue: string;
+  color?: string;
+  pinned?: boolean;
+};
+
 function greetingFor(hour: number, firstName: string) {
   if (hour < 12) return `Good morning, ${firstName}`;
   if (hour < 18) return `Good afternoon, ${firstName}`;
@@ -51,9 +61,31 @@ export default function DashboardPage() {
       .finally(() => setLoading(false));
   }, [user]);
 
+  const dayEvents = useMemo<DayEvent[]>(() => {
+    const official: DayEvent[] = events.map((e) => ({
+      id: e.id,
+      title: e.title,
+      category: e.category,
+      starts_at: e.starts_at ?? "",
+      venue: e.venue,
+    }));
+    const custom: DayEvent[] = pins
+      .filter((p) => p.starts_at)
+      .map((p) => ({
+        id: `pin-${p.id}`,
+        title: p.title,
+        category: "Custom",
+        starts_at: p.starts_at!,
+        venue: "Custom pin",
+        color: p.color,
+        pinned: true,
+      }));
+    return [...official, ...custom];
+  }, [events, pins]);
+
   const byDay = useMemo(() => {
-    const map: Record<number, EventView[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
-    for (const e of events) {
+    const map: Record<number, DayEvent[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+    for (const e of dayEvents) {
       if (!e.starts_at) continue;
       const idx = toWeekIndex(e.starts_at);
       map[idx].push(e);
@@ -64,7 +96,7 @@ export default function DashboardPage() {
       );
     }
     return map;
-  }, [events]);
+  }, [dayEvents]);
 
   const pinnedIds = useMemo(
     () => new Set(pins.map((p) => p.event_id).filter((id): id is string => !!id)),
@@ -167,9 +199,18 @@ export default function DashboardPage() {
                 className="card card-ring group rounded-2xl p-5 transition-all hover:-translate-y-0.5 hover:bg-white/[0.07]"
               >
                 <div className="flex items-center justify-between">
-                  <span className={`category-chip ring-1 ${categoryClass(e.category)}`}>
-                    {e.category}
-                  </span>
+                  {e.pinned ? (
+                    <span
+                      className="rounded-full px-2 py-0.5 text-xs font-semibold text-[#0f172a] ring-1 ring-white/10"
+                      style={{ backgroundColor: e.color ?? "#818cf8" }}
+                    >
+                      Custom
+                    </span>
+                  ) : (
+                    <span className={`category-chip ring-1 ${categoryClass(e.category)}`}>
+                      {e.category}
+                    </span>
+                  )}
                   <span className="text-xs text-slate-500">
                     {e.starts_at
                       ? new Date(e.starts_at).toLocaleTimeString(undefined, {
@@ -185,10 +226,16 @@ export default function DashboardPage() {
                 <p className="mt-1 text-sm text-slate-400">
                   {e.starts_at ? formatDate(e.starts_at) : ""} · {e.venue}
                 </p>
-                {registeredIds.has(e.id) && (
-                  <span className="mt-2 inline-block rounded-md bg-indigo-400/10 px-2 py-0.5 text-xs font-semibold text-indigo-200 ring-1 ring-indigo-400/40">
-                    Registered
+                {e.pinned ? (
+                  <span className="mt-2 inline-block rounded-md bg-amber-400/10 px-2 py-0.5 text-xs font-semibold text-amber-200 ring-1 ring-amber-400/40">
+                    Pinned
                   </span>
+                ) : (
+                  registeredIds.has(e.id) && (
+                    <span className="mt-2 inline-block rounded-md bg-indigo-400/10 px-2 py-0.5 text-xs font-semibold text-indigo-200 ring-1 ring-indigo-400/40">
+                      Registered
+                    </span>
+                  )
                 )}
               </a>
             ))}
