@@ -182,7 +182,6 @@ export default function EventCalendar() {
       id: e.event_id,
       title: e.title,
       start: e.starts_at!,
-      end: e.ends_at ?? undefined,
       editable: false,
       backgroundColor: categoryColorOf(e.category),
       borderColor: categoryColorOf(e.category),
