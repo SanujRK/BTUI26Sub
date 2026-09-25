@@ -199,6 +199,8 @@ export default function EventCalendar() {
 
   const poolToShow = pool.filter((t) => !pinnedEventIds.has(t.event_id));
 
+  const showPool = !!user && poolToShow.length > 0;
+
   return (
     <div className="flex flex-col gap-4">
       {flash && (
@@ -271,7 +273,9 @@ export default function EventCalendar() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_260px]">
+      <div
+        className={showPool ? "grid grid-cols-1 gap-4 lg:grid-cols-[1fr_260px]" : "grid grid-cols-1 gap-4"}
+      >
         <div className="card card-ring overflow-hidden rounded-2xl p-4">
           <FullCalendar
             ref={calendarRef}
@@ -371,7 +375,7 @@ export default function EventCalendar() {
           />
         </div>
 
-        {user && poolToShow.length > 0 && (
+        {showPool && (
           <aside className="card card-ring rounded-2xl p-4">
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400">
               Pin a TBD event
