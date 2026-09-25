@@ -277,6 +277,7 @@ export default function EventCalendar() {
             ref={calendarRef}
             plugins={[dayGridPlugin, listPlugin, interactionPlugin]}
             initialView="dayGridMonth"
+            firstDay={1}
             events={[...officialEvents, ...reminderEvents]}
             dayMaxEventRows={3}
             height="auto"
