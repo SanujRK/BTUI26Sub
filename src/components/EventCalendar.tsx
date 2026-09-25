@@ -95,10 +95,17 @@ export default function EventCalendar() {
     [events]
   );
 
-  const pinnedEventIds = useMemo(
-    () => new Set(customEvents.map((c) => c.event_id).filter((id): id is string => !!id)),
-    [customEvents]
-  );
+  const pinnedEventIds = useMemo(() => {
+    const minValid = new Date("2000-01-01T00:00:00Z").getTime();
+    const ids = new Set<string>();
+    for (const c of customEvents) {
+      if (!c.event_id || !c.starts_at) continue;
+      const t = new Date(c.starts_at).getTime();
+      if (Number.isNaN(t) || t < minValid) continue;
+      ids.add(c.event_id);
+    }
+    return ids;
+  }, [customEvents]);
 
   useEffect(() => {
     const announced = customEvents.filter((c) => {
