@@ -9,12 +9,14 @@ import {
   getEvents,
   getCustomEvents,
   getTbdPool,
+  getMyRegistrations,
   createCustomEvent,
   updateCustomEvent,
   deleteCustomEvent,
   type EventView,
   type CustomEventRow,
   type TbdRegistration,
+  type MyRegistration,
 } from "../lib/api";
 import { categoryColorOf } from "../lib/categories";
 
@@ -52,6 +54,7 @@ export default function EventCalendar() {
   const { user } = useUser();
 
   const [events, setEvents] = useState<EventView[]>([]);
+  const [myRegs, setMyRegs] = useState<MyRegistration[]>([]);
   const [customEvents, setCustomEvents] = useState<CustomEventRow[]>([]);
   const [pool, setPool] = useState<TbdRegistration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,12 +77,16 @@ export default function EventCalendar() {
       .then(setEvents)
       .catch((err) => setError(err.message));
     if (user) {
-      Promise.all([getCustomEvents(), getTbdPool()])
-        .then(([c, p]) => {
+      Promise.all([getCustomEvents(), getTbdPool(), getMyRegistrations()])
+        .then(([c, p, r]) => {
           setCustomEvents(c);
           setPool(p);
+          setMyRegs(r);
         })
         .catch((err) => setError(err.message));
+    } else {
+      setMyRegs([]);
+      setPool([]);
     }
     setLoading(false);
   }, [user]);
@@ -162,7 +169,7 @@ export default function EventCalendar() {
     return <p className="py-16 text-center text-slate-500">Loading calendar…</p>;
   }
 
-  const officialEvents = events
+  const officialEvents = myRegs
     .filter((e) => e.starts_at)
     .filter((e) => {
       if (category && e.category !== category) return false;
@@ -170,14 +177,14 @@ export default function EventCalendar() {
       return true;
     })
     .map((e) => ({
-      id: e.id,
+      id: e.event_id,
       title: e.title,
       start: e.starts_at!,
       end: e.ends_at ?? undefined,
       editable: false,
       backgroundColor: categoryColorOf(e.category),
       borderColor: categoryColorOf(e.category),
-      extendedProps: { url: `/event?id=${e.id}` },
+      extendedProps: { url: `/event?id=${e.event_id}` },
     }));
 
   const reminderEvents = customEvents
@@ -272,6 +279,12 @@ export default function EventCalendar() {
           ))}
         </div>
       </div>
+
+      {!user && (
+        <p className="rounded-lg bg-indigo-400/10 px-3 py-2 text-sm text-indigo-200 ring-1 ring-indigo-400/40">
+          Sign in to fill this calendar with the events you register for.
+        </p>
+      )}
 
       <div
         className={showPool ? "grid grid-cols-1 gap-4 lg:grid-cols-[1fr_260px]" : "grid grid-cols-1 gap-4"}

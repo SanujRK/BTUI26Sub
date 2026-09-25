@@ -62,13 +62,15 @@ export default function DashboardPage() {
   }, [user]);
 
   const dayEvents = useMemo<DayEvent[]>(() => {
-    const official: DayEvent[] = events.map((e) => ({
-      id: e.id,
-      title: e.title,
-      category: e.category,
-      starts_at: e.starts_at ?? "",
-      venue: e.venue,
-    }));
+    const official: DayEvent[] = items
+      .filter((r) => r.starts_at)
+      .map((r) => ({
+        id: r.event_id,
+        title: r.title,
+        category: r.category,
+        starts_at: r.starts_at!,
+        venue: r.venue,
+      }));
     const custom: DayEvent[] = pins
       .filter((p) => p.starts_at)
       .map((p) => ({
@@ -81,7 +83,7 @@ export default function DashboardPage() {
         pinned: true,
       }));
     return [...official, ...custom];
-  }, [events, pins]);
+  }, [items, pins]);
 
   const byDay = useMemo(() => {
     const map: Record<number, DayEvent[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
