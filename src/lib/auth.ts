@@ -7,6 +7,7 @@ export type User = {
   email: string;
   fullName: string;
   role: Role;
+  pfp?: string | null;
 };
 
 export async function getCurrentUser(): Promise<User | null> {
@@ -16,7 +17,9 @@ export async function getCurrentUser(): Promise<User | null> {
     data: { session },
   } = await client.auth.getSession();
   if (!session?.user) return null;
-  return profileFor(session.user.id, session.user.email ?? "");
+  const user = await profileFor(session.user.id, session.user.email ?? "");
+  if (!user) return null;
+  return { ...user, pfp: (session.user.user_metadata?.pfp as string) || null };
 }
 
 async function profileFor(userId: string, email: string): Promise<User | null> {
@@ -89,7 +92,51 @@ export function onAuthStateChange(cb: (user: User | null) => void): () => void {
       return;
     }
     const user = await profileFor(session.user.id, session.user.email ?? "");
-    cb(user);
+    cb(user ? { ...user, pfp: (session.user.user_metadata?.pfp as string) || null } : null);
   });
   return () => data.subscription.unsubscribe();
+}
+
+async function sessionUserId(): Promise<string | null> {
+  const {
+    data: { session },
+  } = await requireClient().auth.getSession();
+  return session?.user?.id ?? null;
+}
+
+export async function updateAccountName(fullName: string): Promise<void> {
+  const client = requireClient();
+  const uid = await sessionUserId();
+  if (!uid) throw new Error("Not signed in.");
+  const { error } = await client
+    .from("profiles")
+    .update({ full_name: fullName })
+    .eq("id", uid);
+  if (error) throw new Error(error.message);
+  const { error: e2 } = await client.auth.updateUser({ data: { full_name: fullName } });
+  if (e2) throw new Error(e2.message);
+}
+
+export async function updateAccountEmail(email: string): Promise<void> {
+  const { error } = await requireClient().auth.updateUser({ email });
+  if (error) throw new Error(error.message);
+}
+
+export async function updateAccountPassword(password: string): Promise<void> {
+  const { error } = await requireClient().auth.updateUser({ password });
+  if (error) throw new Error(error.message);
+}
+
+export async function setAccountPfp(url: string): Promise<void> {
+  const { error } = await requireClient().auth.updateUser({
+    data: { pfp: url },
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteAccount(): Promise<void> {
+  const client = requireClient();
+  const { error } = await client.rpc("delete_account");
+  if (error) throw new Error(error.message);
+  await client.auth.signOut();
 }
