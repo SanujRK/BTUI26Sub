@@ -370,52 +370,44 @@ export default function EventCalendar() {
           />
         </div>
 
-        <aside className="card card-ring rounded-2xl p-4">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400">
-            Pin a TBD event
-          </h2>
-          {!user ? (
-            <p className="mt-3 text-sm text-slate-500">
-              Sign in to pin date-free events to your calendar.
-            </p>
-          ) : poolToShow.length === 0 ? (
-            <p className="mt-3 text-sm text-slate-500">
-              No unpinned date-free events. Register for a TBD event to pin it.
-            </p>
-          ) : (
+        {user && poolToShow.length > 0 && (
+          <aside className="card card-ring rounded-2xl p-4">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400">
+              Pin a TBD event
+            </h2>
             <p className="mt-1 text-xs text-slate-500">
               Drag onto a day, or tap to pick a date.
             </p>
-          )}
-          <div className="mt-3 space-y-2">
-            {poolToShow.map((t) => (
-              <div
-                key={t.event_id}
-                ref={(node) => {
-                  if (!node || poolDraggables.current.has(t.event_id)) return;
-                  poolDraggables.current.set(
-                    t.event_id,
-                    new Draggable(node, {
-                      eventData: { title: t.title, tbdEventId: t.event_id },
-                    })
-                  );
-                }}
-                className="fc-event cursor-grab select-none rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-white/10"
-                onClick={() => {
-                  if (!user) return;
-                  setModal({
-                    kind: "tbd",
-                    eventId: t.event_id,
-                    title: t.title,
-                    start: new Date(dateOnly(new Date()) + "T12:00:00").toISOString(),
-                  });
-                }}
-              >
-                {t.title}
-              </div>
-            ))}
-          </div>
-        </aside>
+            <div className="mt-3 space-y-2">
+              {poolToShow.map((t) => (
+                <div
+                  key={t.event_id}
+                  ref={(node) => {
+                    if (!node || poolDraggables.current.has(t.event_id)) return;
+                    poolDraggables.current.set(
+                      t.event_id,
+                      new Draggable(node, {
+                        eventData: { title: t.title, tbdEventId: t.event_id },
+                      })
+                    );
+                  }}
+                  className="fc-event cursor-grab select-none rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-white/10"
+                  onClick={() => {
+                    if (!user) return;
+                    setModal({
+                      kind: "tbd",
+                      eventId: t.event_id,
+                      title: t.title,
+                      start: new Date(dateOnly(new Date()) + "T12:00:00").toISOString(),
+                    });
+                  }}
+                >
+                  {t.title}
+                </div>
+              ))}
+            </div>
+          </aside>
+        )}
       </div>
 
       {modal && (
