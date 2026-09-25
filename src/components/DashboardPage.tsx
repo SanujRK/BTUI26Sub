@@ -4,6 +4,7 @@ import {
   getMyRegistrations,
   getCustomEvents,
   getEvents,
+  createCustomEvent,
   type MyRegistration,
   type EventView,
   type CustomEventRow,
@@ -110,6 +111,21 @@ export default function DashboardPage() {
   const shown = expanded ? selected : selected.slice(0, 3);
 
   const registeredIds = useMemo(() => new Set(items.map((r) => r.event_id)), [items]);
+
+  const pinEvent = async (e: EventView) => {
+    if (pinnedIds.has(e.id) || !e.starts_at) return;
+    try {
+      await createCustomEvent({
+        title: e.title,
+        color: "#818cf8",
+        starts_at: e.starts_at,
+        event_id: e.id,
+      });
+      setPins(await getCustomEvents());
+    } catch {
+      /* ignore */
+    }
+  };
 
   const upcoming = useMemo(
     () =>
@@ -274,14 +290,32 @@ export default function DashboardPage() {
                   <span className={`category-chip ring-1 ${categoryClass(e.category)}`}>
                     {e.category}
                   </span>
-                  <span className="text-xs text-slate-500">
-                    {e.starts_at
-                      ? new Date(e.starts_at).toLocaleTimeString(undefined, {
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })
-                      : ""}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-500">
+                      {e.starts_at
+                        ? new Date(e.starts_at).toLocaleTimeString(undefined, {
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })
+                        : ""}
+                    </span>
+                    <button
+                      onClick={(ev) => {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                        pinEvent(e);
+                      }}
+                      aria-label={pinnedIds.has(e.id) ? "Added to calendar" : "Add to calendar"}
+                      title={pinnedIds.has(e.id) ? "Added to calendar" : "Add to calendar"}
+                      className={`flex h-6 w-6 items-center justify-center rounded-full text-sm font-bold transition-colors ${
+                        pinnedIds.has(e.id)
+                          ? "bg-indigo-400/20 text-indigo-200 ring-1 ring-indigo-400/40"
+                          : "bg-white/10 text-slate-200 ring-1 ring-white/20 hover:bg-indigo-500 hover:text-white"
+                      }`}
+                    >
+                      {pinnedIds.has(e.id) ? "✓" : "+"}
+                    </button>
+                  </div>
                 </div>
                 <h3 className="mt-3 font-semibold leading-snug text-slate-100 group-hover:text-white">
                   {e.title}
