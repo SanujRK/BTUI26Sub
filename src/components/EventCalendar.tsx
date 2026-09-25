@@ -171,9 +171,7 @@ export default function EventCalendar() {
     return <p className="py-16 text-center text-slate-500">Loading calendar…</p>;
   }
 
-  const myRegIds = useMemo(() => new Set(myRegs.map((r) => r.event_id)), [myRegs]);
-
-  const officialEvents = events
+  const officialEvents = myRegs
     .filter((e) => e.starts_at)
     .filter((e) => {
       if (category && e.category !== category) return false;
@@ -181,14 +179,14 @@ export default function EventCalendar() {
       return true;
     })
     .map((e) => ({
-      id: e.id,
+      id: e.event_id,
       title: e.title,
       start: e.starts_at!,
       end: e.ends_at ?? undefined,
       editable: false,
       backgroundColor: categoryColorOf(e.category),
       borderColor: categoryColorOf(e.category),
-      extendedProps: { url: `/event?id=${e.id}`, registered: myRegIds.has(e.id) },
+      extendedProps: { url: `/event?id=${e.event_id}` },
     }));
 
   const reminderEvents = customEvents
@@ -286,7 +284,7 @@ export default function EventCalendar() {
 
       {!user && (
         <p className="rounded-lg bg-indigo-400/10 px-3 py-2 text-sm text-indigo-200 ring-1 ring-indigo-400/40">
-          Sign in to register for events, add custom reminders, and pin undated events.
+          Sign in to fill this calendar with the events you register for.
         </p>
       )}
 
@@ -358,8 +356,7 @@ export default function EventCalendar() {
             }}
             eventContent={(arg) => {
               const span = document.createElement("span");
-              const registered = arg.event.extendedProps.registered;
-              span.textContent = registered ? "✓ " + (arg.event.title || "") : (arg.event.title || "");
+              span.textContent = arg.event.title || "";
               const bg = arg.event.backgroundColor;
               if (bg) {
                 span.style.flex = "1";
