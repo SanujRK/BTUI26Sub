@@ -325,13 +325,6 @@ export default function EventCalendar() {
               }).catch((err) => setFlash({ msg: err.message, ok: false }));
             }}
             eventDidMount={(arg) => {
-              const isCustom = !!arg.event.extendedProps.isCustom;
-              if (isCustom) arg.el.style.color = "#0f172a";
-              const bg = arg.event.backgroundColor;
-              if (bg) {
-                arg.el.style.backgroundColor = bg;
-                arg.el.style.borderColor = bg;
-              }
               if (!arg.event.start) return;
               arg.el.title = arg.event.start.toLocaleString(undefined, {
                 month: "short",
@@ -344,6 +337,17 @@ export default function EventCalendar() {
             eventContent={(arg) => {
               const span = document.createElement("span");
               span.textContent = arg.event.title || "";
+              const bg = arg.event.backgroundColor;
+              if (bg) {
+                span.style.flex = "1";
+                span.style.overflow = "hidden";
+                span.style.textOverflow = "ellipsis";
+                span.style.whiteSpace = "nowrap";
+                span.style.padding = "0 6px";
+                span.style.borderRadius = "5px";
+                span.style.backgroundColor = bg;
+                span.style.color = "#0f172a";
+              }
               return { domNodes: [span] };
             }}
             eventClick={(info) => {
