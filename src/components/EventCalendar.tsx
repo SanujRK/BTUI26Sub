@@ -192,16 +192,20 @@ export default function EventCalendar() {
     .filter((c) => c.starts_at)
     .map((c) => {
       const d = new Date(c.starts_at);
-      const isNoon = d.getHours() === 12 && d.getMinutes() === 0;
       return {
         id: `custom-${c.id}`,
         title: c.title,
-        start: c.starts_at,
-        allDay: isNoon,
+        start: dateOnly(d),
+        allDay: true,
         editable: true,
         backgroundColor: c.color,
         borderColor: c.color,
-        extendedProps: { isCustom: true, customId: c.id },
+        extendedProps: {
+          isCustom: true,
+          customId: c.id,
+          timeStr: timeOnly(d),
+          startIso: c.starts_at,
+        },
       };
     });
 
@@ -337,15 +341,17 @@ export default function EventCalendar() {
               const customId = info.event.extendedProps.customId;
               if (!customId || !info.event.start) return;
               const moved = info.event.start;
+              const timeStr =
+                (info.event.extendedProps.timeStr as string) || timeOnly(moved);
               updateCustomEvent(customId as string, {
-                starts_at: new Date(
-                  `${dateOnly(moved)}T${timeOnly(moved)}:00`
-                ).toISOString(),
+                starts_at: new Date(`${dateOnly(moved)}T${timeStr}:00`).toISOString(),
               }).catch((err) => setFlash({ msg: err.message, ok: false }));
             }}
             eventDidMount={(arg) => {
-              if (!arg.event.start) return;
-              arg.el.title = arg.event.start.toLocaleString(undefined, {
+              const startIso = arg.event.extendedProps.startIso as string | undefined;
+              const d = startIso ? new Date(startIso) : arg.event.start;
+              if (!d) return;
+              arg.el.title = d.toLocaleString(undefined, {
                 month: "short",
                 day: "numeric",
                 year: "numeric",
@@ -372,12 +378,16 @@ export default function EventCalendar() {
             eventClick={(info) => {
               if (info.event.extendedProps.isCustom) {
                 const id = info.event.extendedProps.customId as string;
+                const startIso =
+                  (info.event.extendedProps.startIso as string) ||
+                  info.event.start?.toISOString() ||
+                  "";
                 setModal({
                   kind: "edit",
                   id,
                   title: info.event.title,
                   color: info.event.backgroundColor,
-                  start: info.event.start?.toISOString() ?? "",
+                  start: startIso,
                 });
                 return;
               }
