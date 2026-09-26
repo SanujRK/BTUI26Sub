@@ -205,6 +205,11 @@ export default function AdminPanel() {
       )
     : events;
 
+  const ownFirstEvents = [...filteredEvents].sort(
+    (a, b) =>
+      (a.created_by === user?.id ? 0 : 1) - (b.created_by === user?.id ? 0 : 1)
+  );
+
   const now = Date.now();
   const eventSuggestions = eventQuery.trim()
     ? [...events]
@@ -298,7 +303,7 @@ export default function AdminPanel() {
               </p>
             ) : (
               <div className="flex flex-col gap-2">
-                {filteredEvents.map((e) => (
+                {ownFirstEvents.map((e) => (
                   <div
                     key={e.id}
                     className="card card-ring flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4"

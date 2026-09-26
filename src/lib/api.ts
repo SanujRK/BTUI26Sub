@@ -88,9 +88,12 @@ export type TbdRegistration = {
 export async function getCustomEvents(): Promise<CustomEventRow[]> {
   if (!isSupabaseConfigured) return [];
   const client = requireClient();
+  const userId = await currentUserId();
+  if (!userId) return [];
   const { data, error } = await client
     .from("custom_events")
     .select("id, title, color, starts_at, event_id, notified_at, created_at")
+    .eq("user_id", userId)
     .order("starts_at", { ascending: true });
   if (error) throw error;
   return data ?? [];
@@ -99,9 +102,12 @@ export async function getCustomEvents(): Promise<CustomEventRow[]> {
 export async function getTbdPool(): Promise<TbdRegistration[]> {
   if (!isSupabaseConfigured) return [];
   const client = requireClient();
+  const userId = await currentUserId();
+  if (!userId) return [];
   const { data, error } = await client
     .from("registrations")
-    .select("event_id, events!inner(id, title, starts_at, ends_at, category)");
+    .select("event_id, events!inner(id, title, starts_at, ends_at, category)")
+    .eq("user_id", userId);
   if (error) throw error;
   const registrations = (data ?? []) as {
     event_id: string;
@@ -274,11 +280,14 @@ export type MyRegistration = {
 export async function getMyRegistrations(): Promise<MyRegistration[]> {
   if (!isSupabaseConfigured) return [];
   const client = requireClient();
+  const userId = await currentUserId();
+  if (!userId) return [];
   const { data, error } = await client
     .from("registrations")
     .select(
       "created_at, events!inner(id, title, starts_at, ends_at, venue, category)"
     )
+    .eq("user_id", userId)
     .order("created_at", { ascending: false });
   if (error) throw error;
   return ((data ?? []) as Array<{
@@ -317,9 +326,12 @@ export type TicketView = {
 export async function getMyTickets(): Promise<TicketView[]> {
   if (!isSupabaseConfigured) return [];
   const client = requireClient();
+  const userId = await currentUserId();
+  if (!userId) return [];
   const { data, error } = await client
     .from("tickets")
     .select("id, created_at, events!inner(id, title, category, venue, starts_at)")
+    .eq("user_id", userId)
     .order("created_at", { ascending: false });
   if (error) throw error;
   return ((data ?? []) as Array<{
