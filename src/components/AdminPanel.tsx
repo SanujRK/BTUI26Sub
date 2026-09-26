@@ -9,6 +9,8 @@ import {
   changeUserRole,
   getTheme,
   setTheme,
+  getPalette,
+  setPalette,
   saveEvent,
   removeEvent,
   postAnnouncement,
@@ -20,8 +22,17 @@ import {
   type ProfileRow,
 } from "../lib/api";
 import { categoryClass } from "../lib/categories";
+import { applyPalette, DEFAULT_PALETTE, PALETTE_FIELDS, type SitePalette } from "../lib/palette";
 
 const CATEGORIES = ["Debate", "Sports", "Exhibition", "Culture", "Tech", "General"];
+
+const TAB_ICONS: Record<string, string> = {
+  Events: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4",
+  Announcements: "M3 11l18-5v12L3 14v-3zM11.6 16.8a3 3 0 11-5.8-1.6",
+  Highlights: "M13 10V3L4 14h7v7l9-11h-7z",
+  Appearance: "M12 3a9 9 0 100 18 9 9 0 000-18zm0 0l2 2-1 3h-2l-1-3 2-2zm0 6a3 3 0 110 6 3 3 0 010-6z",
+  Teachers: "M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zm11-2h-6m3 3V6",
+};
 
 type FormState = {
   title: string;
@@ -60,6 +71,11 @@ function toLocalInput(iso: string | null): string {
 
 export default function AdminPanel() {
   const { user } = useUser();
+  const isAdmin = user?.role === "admin";
+  const tabs = isAdmin
+    ? ["Events", "Announcements", "Highlights", "Appearance", "Teachers"]
+    : ["Events", "Announcements", "Highlights"];
+  const [tab, setTab] = useState<string>(tabs[0]);
   const [events, setEvents] = useState<EventView[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
@@ -70,8 +86,10 @@ export default function AdminPanel() {
   const [hiForm, setHiForm] = useState({ event_id: "", body: "" });
   const [feedback, setFeedback] = useState("");
   const [theme, setThemeState] = useState<"dark" | "light">("dark");
+  const [palette, setPaletteState] = useState<SitePalette>(DEFAULT_PALETTE);
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [roleBusy, setRoleBusy] = useState("");
+  const [search, setSearch] = useState("");
 
   const refresh = async () => {
     setEvents(await getEvents());
@@ -92,13 +110,21 @@ export default function AdminPanel() {
     getEvents()
       .then((ev) => {
         setEvents(ev);
-        return Promise.all([getAnnouncements(), getRecentHighlights(), getTheme(), getProfiles()]);
+        return Promise.all([
+          getAnnouncements(),
+          getRecentHighlights(),
+          getTheme(),
+          getProfiles(),
+          getPalette(),
+        ]);
       })
-      .then(([ann, hi, t, prof]) => {
+      .then(([ann, hi, t, prof, pal]) => {
         setAnnouncements(ann);
         setHighlights(hi);
         setThemeState((t as "dark" | "light") ?? "dark");
         setProfiles(prof);
+        setPaletteState(pal);
+        applyPalette(pal);
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
@@ -115,6 +141,27 @@ export default function AdminPanel() {
       await setTheme(next);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save theme.");
+    }
+  };
+
+  const saveColours = async () => {
+    try {
+      await setPalette(palette);
+      applyPalette(palette);
+      setFeedback("Colours saved across the whole site.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save colours.");
+    }
+  };
+
+  const resetColours = async () => {
+    applyPalette(DEFAULT_PALETTE);
+    setPaletteState(DEFAULT_PALETTE);
+    try {
+      await setPalette(DEFAULT_PALETTE);
+      setFeedback("Colours reset to the defaults.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to reset colours.");
     }
   };
 
@@ -165,18 +212,50 @@ export default function AdminPanel() {
     }
   };
 
+  const input = "w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400";
+  const optionCls = "bg-(--bg-page)";
+
+  const matches = search.trim()
+    ? profiles.filter(
+        (p) =>
+          (p.full_name || "").toLowerCase().includes(search.trim().toLowerCase()) ||
+          p.email.toLowerCase().includes(search.trim().toLowerCase())
+      )
+    : [];
+
   return (
     <Guard roles={["teacher", "admin"]}>
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-black tracking-tight">Admin</h1>
-          <button
-            onClick={() => setModal({})}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
-          >
-            + New event
-          </button>
         </div>
+
+        <nav className="-mx-1 flex gap-1 overflow-x-auto rounded-xl bg-white/5 p-1 ring-1 ring-white/10">
+          {tabs.map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                tab === t
+                  ? "bg-indigo-600 text-white"
+                  : "text-slate-300 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              <svg
+                className="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d={TAB_ICONS[t]} />
+              </svg>
+              {t}
+            </button>
+          ))}
+        </nav>
 
         {error && (
           <p className="card card-ring rounded-2xl p-4 text-center text-sm text-slate-400">
@@ -189,7 +268,82 @@ export default function AdminPanel() {
           </p>
         )}
 
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        {tab === "Events" && (
+          <section>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-lg font-bold tracking-tight">Manage events</h2>
+              <button
+                onClick={() => setModal({})}
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+              >
+                + New event
+              </button>
+            </div>
+            {loading ? (
+              <p className="py-8 text-center text-slate-500">Loading events…</p>
+            ) : events.length === 0 ? (
+              <p className="text-slate-500">No events yet.</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {events.map((e) => (
+                  <div
+                    key={e.id}
+                    className="card card-ring flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={`category-chip ring-1 ${categoryClass(e.category)}`}>
+                          {e.category}
+                        </span>
+                        {e.is_ticketed && (
+                          <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-300 ring-1 ring-amber-400/30">
+                            Ticketed
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="mt-1.5 truncate font-semibold text-slate-100">{e.title}</h3>
+                      <p className="truncate text-sm text-slate-400">
+                        {e.starts_at
+                          ? new Date(e.starts_at).toLocaleString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })
+                          : "Date TBD"}{" "}
+                        · {e.venue} · {e.registrations}
+                        {e.capacity ? `/${e.capacity}` : ""} registered
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setModal({ id: e.id })}
+                        className="rounded-lg border border-white/15 px-3 py-1.5 text-sm font-semibold text-slate-300 transition-colors hover:bg-white/5"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Delete "${e.title}"? This cannot be undone.`)) {
+                            removeEvent(e.id)
+                              .then(refresh)
+                              .catch((err) => setError(err.message));
+                          }
+                        }}
+                        className="rounded-lg border border-rose-400/40 px-3 py-1.5 text-sm font-semibold text-rose-300 transition-colors hover:bg-rose-400/10"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {tab === "Announcements" && (
           <section className="card card-ring rounded-2xl p-5">
             <h2 className="text-lg font-bold tracking-tight">Post announcement</h2>
             <p className="mt-1 text-xs text-slate-500">
@@ -200,24 +354,24 @@ export default function AdminPanel() {
                 value={annForm.title}
                 onChange={(e) => setAnnForm((f) => ({ ...f, title: e.target.value }))}
                 placeholder="Title"
-                className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400"
+                className={input}
               />
               <textarea
                 value={annForm.body}
                 onChange={(e) => setAnnForm((f) => ({ ...f, body: e.target.value }))}
                 placeholder="What everyone should know…"
-                className="min-h-24 w-full resize-y rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400"
+                className={`${input} min-h-24 resize-y`}
               />
               <select
                 value={annForm.event_id}
                 onChange={(e) => setAnnForm((f) => ({ ...f, event_id: e.target.value }))}
-                className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400"
+                className={input}
               >
-                <option value="" className="bg-[#0d0f18]">
+                <option value="" className={optionCls}>
                   No linked event
                 </option>
                 {events.map((e) => (
-                  <option key={e.id} value={e.id} className="bg-[#0d0f18]">
+                  <option key={e.id} value={e.id} className={optionCls}>
                     {e.title}
                   </option>
                 ))}
@@ -257,7 +411,9 @@ export default function AdminPanel() {
               </div>
             )}
           </section>
+        )}
 
+        {tab === "Highlights" && (
           <section className="card card-ring rounded-2xl p-5">
             <h2 className="text-lg font-bold tracking-tight">Live highlight</h2>
             <p className="mt-1 text-xs text-slate-500">
@@ -267,13 +423,13 @@ export default function AdminPanel() {
               <select
                 value={hiForm.event_id}
                 onChange={(e) => setHiForm((f) => ({ ...f, event_id: e.target.value }))}
-                className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400"
+                className={input}
               >
-                <option value="" className="bg-[#0d0f18]">
+                <option value="" className={optionCls}>
                   Choose an event
                 </option>
                 {events.map((e) => (
-                  <option key={e.id} value={e.id} className="bg-[#0d0f18]">
+                  <option key={e.id} value={e.id} className={optionCls}>
                     {e.title}
                   </option>
                 ))}
@@ -282,7 +438,7 @@ export default function AdminPanel() {
                 value={hiForm.body}
                 onChange={(e) => setHiForm((f) => ({ ...f, body: e.target.value }))}
                 placeholder="e.g. Intense final round — the crowd is in! 🔥"
-                className="min-h-20 w-full resize-y rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400"
+                className={`${input} min-h-20 resize-y`}
               />
               <button
                 onClick={() => submitHighlight()}
@@ -307,88 +463,16 @@ export default function AdminPanel() {
               </div>
             )}
           </section>
-        </div>
+        )}
 
-        <section>
-          <h2 className="mb-3 text-lg font-bold tracking-tight">Manage events</h2>
-          {loading ? (
-            <p className="py-8 text-center text-slate-500">Loading events…</p>
-          ) : events.length === 0 ? (
-            <p className="text-slate-500">No events yet.</p>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {events.map((e) => (
-                <div
-                  key={e.id}
-                  className="card card-ring flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4"
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className={`category-chip ring-1 ${categoryClass(e.category)}`}>
-                        {e.category}
-                      </span>
-                      {e.is_ticketed && (
-                        <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-300 ring-1 ring-amber-400/30">
-                          Ticketed
-                        </span>
-                      )}
-                    </div>
-                    <h3 className="mt-1.5 truncate font-semibold text-slate-100">{e.title}</h3>
-                    <p className="truncate text-sm text-slate-400">
-                      {e.starts_at
-                        ? new Date(e.starts_at).toLocaleString(undefined, {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                            hour: "numeric",
-                            minute: "2-digit",
-                          })
-                        : "Date TBD"}{" "}
-                      · {e.venue} · {e.registrations}
-                      {e.capacity ? `/${e.capacity}` : ""} registered
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() =>
-                        setModal({
-                          id: e.id,
-                        })
-                      }
-                      className="rounded-lg border border-white/15 px-3 py-1.5 text-sm font-semibold text-slate-300 transition-colors hover:bg-white/5"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (window.confirm(`Delete "${e.title}"? This cannot be undone.`)) {
-                          removeEvent(e.id)
-                            .then(refresh)
-                            .catch((err) => setError(err.message));
-                        }
-                      }}
-                      className="rounded-lg border border-rose-400/40 px-3 py-1.5 text-sm font-semibold text-rose-300 transition-colors hover:bg-rose-400/10"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <Guard roles={["admin"]}>
-          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-            <section className="card card-ring rounded-2xl p-5">
+        {isAdmin && tab === "Appearance" && (
+          <section className="card card-ring rounded-2xl p-5">
+            <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold tracking-tight">Site-wide theme</h2>
-              <p className="mt-1 text-xs text-slate-500">
-                Every visitor sees this choice across the whole site.
-              </p>
-              <div className="mt-4 flex gap-2">
+              <div className="flex gap-2">
                 <button
                   onClick={() => applyTheme("dark")}
-                  className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${
+                  className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                     theme === "dark"
                       ? "bg-slate-200 text-slate-900"
                       : "border border-white/15 text-slate-300 hover:bg-white/5"
@@ -398,7 +482,7 @@ export default function AdminPanel() {
                 </button>
                 <button
                   onClick={() => applyTheme("light")}
-                  className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${
+                  className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                     theme === "light"
                       ? "bg-slate-200 text-slate-900"
                       : "border border-white/15 text-slate-300 hover:bg-white/5"
@@ -407,20 +491,69 @@ export default function AdminPanel() {
                   Light
                 </button>
               </div>
-            </section>
+            </div>
 
-            <section className="card card-ring rounded-2xl p-5">
-              <h2 className="text-lg font-bold tracking-tight">Teachers</h2>
+            <div className="mt-6 border-t border-white/10 pt-5">
+              <h3 className="text-base font-bold tracking-tight">Colour palette</h3>
               <p className="mt-1 text-xs text-slate-500">
-                Promote students and parents to teachers, or demote them back.
+                Every visitor sees these colours across the whole site. Pick, then save.
               </p>
-              <div className="mt-4 max-h-80 space-y-2 overflow-y-auto pr-1">
-                {profiles.length === 0 && (
-                  <p className="text-sm text-slate-500">No accounts yet.</p>
-                )}
-                {profiles.map((p) => {
-                  const actionable =
-                    p.role !== "admin" && p.id !== user?.id;
+              <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                {PALETTE_FIELDS.map((f) => (
+                  <label key={f.key} className="block">
+                    <span className="text-sm font-semibold text-slate-400">{f.label}</span>
+                    {f.hint && <span className="block text-xs text-slate-600">{f.hint}</span>}
+                    <input
+                      type="color"
+                      value={palette[f.key]}
+                      onChange={(e) =>
+                        setPaletteState((p) => ({ ...p, [f.key]: e.target.value }))
+                      }
+                      className="mt-1 h-10 w-full cursor-pointer rounded-lg border border-white/15 bg-white/5"
+                    />
+                  </label>
+                ))}
+              </div>
+              <div className="mt-5 flex items-center gap-2">
+                <button
+                  onClick={() => saveColours()}
+                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+                >
+                  Save colours
+                </button>
+                <button
+                  onClick={() => resetColours()}
+                  className="rounded-lg border border-white/15 px-4 py-2 text-sm font-semibold text-slate-300 transition-colors hover:bg-white/5"
+                >
+                  Reset to defaults
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {isAdmin && tab === "Teachers" && (
+          <section className="card card-ring rounded-2xl p-5">
+            <h2 className="text-lg font-bold tracking-tight">Teachers</h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Search for a user by name or email and promote them as a teacher.
+            </p>
+            <div className="mt-4">
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search name or email…"
+                className={input}
+              />
+            </div>
+            <div className="mt-4 space-y-2">
+              {!search.trim() ? (
+                <p className="text-sm text-slate-500">Start typing to find a user to promote.</p>
+              ) : matches.length === 0 ? (
+                <p className="text-sm text-slate-500">No users match “{search.trim()}”.</p>
+              ) : (
+                matches.map((p) => {
+                  const actionable = p.role !== "admin" && p.id !== user?.id;
                   return (
                     <div
                       key={p.id}
@@ -460,11 +593,11 @@ export default function AdminPanel() {
                       </div>
                     </div>
                   );
-                })}
-              </div>
-            </section>
-          </div>
-        </Guard>
+                })
+              )}
+            </div>
+          </section>
+        )}
       </div>
 
       {modal && (
@@ -567,7 +700,7 @@ function EventModal({
               className={input}
             >
               {CATEGORIES.map((c) => (
-                <option key={c} value={c} className="bg-[#0d0f18]">
+                <option key={c} value={c} className="bg-(--bg-page)">
                   {c}
                 </option>
               ))}

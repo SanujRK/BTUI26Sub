@@ -505,3 +505,42 @@ export async function setTheme(theme: string): Promise<void> {
     .eq("key", "theme");
   if (error) throw error;
 }
+
+import type { SitePalette } from "./palette";
+import { DEFAULT_PALETTE } from "./palette";
+
+const PALETTE_KEYS = Object.keys(DEFAULT_PALETTE) as (keyof SitePalette)[];
+
+export async function getPalette(): Promise<SitePalette> {
+  if (!isSupabaseConfigured) return DEFAULT_PALETTE;
+  const client = requireClient();
+  const { data, error } = await client
+    .from("site_settings")
+    .select("value")
+    .eq("key", "colors")
+    .maybeSingle();
+  if (error) throw error;
+  let stored: Partial<SitePalette> = {};
+  if (typeof data?.value === "string") {
+    try {
+      const parsed = JSON.parse(data.value);
+      if (parsed && typeof parsed === "object") stored = parsed;
+    } catch {
+      stored = {};
+    }
+  }
+  for (const k of PALETTE_KEYS) {
+    if (typeof stored[k] !== "string" || !/^#([0-9a-fA-F]{6})$/.test(stored[k] as string)) {
+      stored[k] = DEFAULT_PALETTE[k];
+    }
+  }
+  return { ...DEFAULT_PALETTE, ...stored } as SitePalette;
+}
+
+export async function setPalette(palette: SitePalette): Promise<void> {
+  const client = requireClient();
+  const { error } = await client
+    .from("site_settings")
+    .upsert({ key: "colors", value: JSON.stringify(palette) }, { onConflict: "key" });
+  if (error) throw error;
+}

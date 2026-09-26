@@ -1,5 +1,4 @@
 import { signOut } from "../lib/auth";
-import { isStaffRole } from "../lib/roles";
 import { useUser } from "../hooks/useUser";
 
 function initials(name: string) {
@@ -27,26 +26,6 @@ export default function AuthNav() {
 
   return (
     <div className="flex min-w-0 items-center gap-2">
-      {isStaffRole(user.role) && (
-        <a
-          href="/admin"
-          title="Admin panel"
-          aria-label="Admin panel"
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/15 text-slate-300 transition-colors hover:bg-white/5 hover:text-white"
-        >
-          <svg
-            className="h-4 w-4"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M12 2l8 3.5v5.5c0 5-3.5 9.5-8 11-4.5-1.5-8-6-8-11V5.5z" />
-          </svg>
-        </a>
-      )}
       <a
         href="/account"
         title={user.fullName || user.email}

@@ -1,4 +1,5 @@
 import { useUser } from "../hooks/useUser";
+import { isStaffRole } from "../lib/roles";
 
 const HOME = { href: "/", label: "Home", icon: "M3 12l9-9 9 9M5 10v10h5v-6h4v6h5V10" };
 const DASHBOARD = {
@@ -21,6 +22,11 @@ const TICKETS = {
   label: "Tickets",
   icon: "M2 9a3 3 0 010 6v2a2 2 0 002 2h16a2 2 0 002-2v-2a3 3 0 010-6V7a2 2 0 00-2-2H4a2 2 0 00-2 2zM13 5v2M13 17v2M13 11v2",
 };
+const ADMIN = {
+  href: "/admin",
+  label: "Admin",
+  icon: "M12 2l8 3.5v5.5c0 5-3.5 9.5-8 11-4.5-1.5-8-6-8-11V5.5z",
+};
 
 const GUEST_LINKS = [HOME, CALENDAR, ANNOUNCEMENTS, TICKETS, DASHBOARD];
 const USER_LINKS = [DASHBOARD, CALENDAR, ANNOUNCEMENTS, TICKETS];
@@ -28,12 +34,13 @@ const USER_LINKS = [DASHBOARD, CALENDAR, ANNOUNCEMENTS, TICKETS];
 export default function NavLinks({ variant }: { variant: "sidebar" | "bar" }) {
   const { user } = useUser();
   const links = user ? USER_LINKS : GUEST_LINKS;
+  const visible = user && isStaffRole(user.role) ? [...links, ADMIN] : links;
   const path = typeof window !== "undefined" ? window.location.pathname : "";
 
   if (variant === "bar") {
     return (
       <nav className="-mx-1 flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto text-sm font-medium text-slate-300">
-        {links.map((link) => (
+        {visible.map((link) => (
           <a
             key={link.href}
             href={link.href}
@@ -48,7 +55,7 @@ export default function NavLinks({ variant }: { variant: "sidebar" | "bar" }) {
 
   return (
     <nav className="flex flex-col gap-2.5 text-sm font-medium text-slate-300">
-      {links.map((link) => {
+      {visible.map((link) => {
         const isActive =
           link.href === "/" ? path === "/" : path.startsWith(link.href);
         return (

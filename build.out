@@ -2,29 +2,29 @@
 > btui26@0.0.1 build
 > astro build
 
-[2m23:19:43[22m [34m[types][39m Generated [2m79ms[22m
-[2m23:19:43[22m [34m[build][39m output: [34m"static"[39m
-[2m23:19:43[22m [34m[build][39m mode: [34m"static"[39m
-[2m23:19:43[22m [34m[build][39m directory: [34mC:\Users\Sanuj\Documents\Coding\Projects\BTUI26\dist\[39m
-[2m23:19:43[22m [34m[build][39m Collecting build info...
-[2m23:19:43[22m [34m[build][39m [32m✓ Completed in 125ms.[39m
-[2m23:19:43[22m [34m[build][39m Building static entrypoints...
-[2m23:19:43[22m [34m[vite][39m [32m✓ built in 269ms[39m
-[2m23:19:44[22m [34m[vite][39m [32m✓ built in 185ms[39m
-[2m23:19:44[22m [34m[build][39m Rearranging server assets...
+[2m14:42:19[22m [34m[types][39m Generated [2m346ms[22m
+[2m14:42:19[22m [34m[build][39m output: [34m"static"[39m
+[2m14:42:19[22m [34m[build][39m mode: [34m"static"[39m
+[2m14:42:19[22m [34m[build][39m directory: [34mC:\Users\Sanuj\Documents\Coding\Projects\BTUI26\dist\[39m
+[2m14:42:19[22m [34m[build][39m Collecting build info...
+[2m14:42:19[22m [34m[build][39m [32m✓ Completed in 679ms.[39m
+[2m14:42:19[22m [34m[build][39m Building static entrypoints...
+[2m14:42:20[22m [34m[vite][39m [32m✓ built in 1.36s[39m
+[2m14:42:21[22m [34m[vite][39m [32m✓ built in 744ms[39m
+[2m14:42:21[22m [34m[build][39m Rearranging server assets...
 
 [42m[30m generating static routes [39m[49m
-[2m23:19:44[22m   [34m├─[39m [2m/account/index.html[22m [2m(+87ms)[22m 
-[2m23:19:44[22m   [34m├─[39m [2m/admin/index.html[22m [2m(+8ms)[22m 
-[2m23:19:44[22m   [34m├─[39m [2m/announcements/index.html[22m [2m(+11ms)[22m 
-[2m23:19:44[22m   [34m├─[39m [2m/dashboard/index.html[22m [2m(+10ms)[22m 
-[2m23:19:44[22m   [34m├─[39m [2m/event/index.html[22m [2m(+8ms)[22m 
-[2m23:19:44[22m   [34m├─[39m [2m/events/index.html[22m [2m(+33ms)[22m 
-[2m23:19:44[22m   [34m├─[39m [2m/login/index.html[22m [2m(+5ms)[22m 
-[2m23:19:44[22m   [34m├─[39m [2m/tickets/index.html[22m [2m(+7ms)[22m 
-[2m23:19:44[22m   [34m├─[39m [2m/index.html[22m [2m(+7ms)[22m 
-[2m23:19:44[22m [32m✓ Completed in 237ms.
+[2m14:42:21[22m   [34m├─[39m [2m/account/index.html[22m [2m(+357ms)[22m 
+[2m14:42:22[22m   [34m├─[39m [2m/admin/index.html[22m [2m(+26ms)[22m 
+[2m14:42:22[22m   [34m├─[39m [2m/announcements/index.html[22m [2m(+17ms)[22m 
+[2m14:42:22[22m   [34m├─[39m [2m/dashboard/index.html[22m [2m(+39ms)[22m 
+[2m14:42:22[22m   [34m├─[39m [2m/event/index.html[22m [2m(+34ms)[22m 
+[2m14:42:22[22m   [34m├─[39m [2m/events/index.html[22m [2m(+131ms)[22m 
+[2m14:42:22[22m   [34m├─[39m [2m/login/index.html[22m [2m(+20ms)[22m 
+[2m14:42:22[22m   [34m├─[39m [2m/tickets/index.html[22m [2m(+22ms)[22m 
+[2m14:42:22[22m   [34m├─[39m [2m/index.html[22m [2m(+21ms)[22m 
+[2m14:42:22[22m [32m✓ Completed in 822ms.
 [39m
-[2m23:19:44[22m [34m[build][39m [32m✓ Completed in 747ms.[39m
-[2m23:19:44[22m [34m[build][39m 9 page(s) built in [1m879ms[22m
-[2m23:19:44[22m [34m[build][39m [1mComplete![22m
+[2m14:42:22[22m [34m[build][39m [32m✓ Completed in 3.17s.[39m
+[2m14:42:22[22m [34m[build][39m 9 page(s) built in [1m3.88s[22m
+[2m14:42:22[22m [34m[build][39m [1mComplete![22m
