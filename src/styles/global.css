@@ -300,3 +300,25 @@ html.light .fc .fc-daygrid-more-link {
 .fc .fc-daygrid-more-link {
   color: #a5b4fc;
 }
+
+@media (max-width: 767px) {
+  .fc .fc-daygrid-day-number {
+    font-size: 0.7rem;
+    padding: 2px;
+  }
+
+  .fc .fc-daygrid-day-frame {
+    min-height: 36px;
+  }
+
+  .fc .fc-daygrid-event {
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .fc .fc-daygrid-event > span {
+    font-size: 0.6rem !important;
+    padding: 0 2px !important;
+    border-radius: 4px;
+  }
+}

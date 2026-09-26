@@ -310,8 +310,9 @@ export default function EventCalendar() {
           <FullCalendar
             ref={calendarRef}
             plugins={[dayGridPlugin, listPlugin, interactionPlugin]}
-            initialView="dayGridMonth"
+            initialView={isMobile ? "listMonth" : "dayGridMonth"}
             firstDay={1}
+            fixedWeekCount={false}
             events={[...officialEvents, ...reminderEvents]}
             dayMaxEventRows={3}
             height="auto"
