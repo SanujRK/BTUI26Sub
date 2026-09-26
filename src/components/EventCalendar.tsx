@@ -9,16 +9,12 @@ import {
   getEvents,
   getCustomEvents,
   getTbdPool,
-  getMyRegistrations,
-  getMyTickets,
   createCustomEvent,
   updateCustomEvent,
   deleteCustomEvent,
   type EventView,
   type CustomEventRow,
   type TbdRegistration,
-  type MyRegistration,
-  type TicketView,
 } from "../lib/api";
 import { categoryColorOf } from "../lib/categories";
 
@@ -56,10 +52,8 @@ export default function EventCalendar() {
   const { user } = useUser();
 
   const [events, setEvents] = useState<EventView[]>([]);
-  const [myRegs, setMyRegs] = useState<MyRegistration[]>([]);
   const [customEvents, setCustomEvents] = useState<CustomEventRow[]>([]);
   const [pool, setPool] = useState<TbdRegistration[]>([]);
-  const [tickets, setTickets] = useState<TicketView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState<AnnouncementNotice[] | null>(null);
@@ -85,18 +79,14 @@ export default function EventCalendar() {
       .then(setEvents)
       .catch((err) => setError(err.message));
     if (user) {
-      Promise.all([getCustomEvents(), getTbdPool(), getMyRegistrations(), getMyTickets()])
-        .then(([c, p, r, t]) => {
+      Promise.all([getCustomEvents(), getTbdPool()])
+        .then(([c, p]) => {
           setCustomEvents(c);
           setPool(p);
-          setMyRegs(r);
-          setTickets(t);
         })
         .catch((err) => setError(err.message));
     } else {
-      setMyRegs([]);
       setPool([]);
-      setTickets([]);
     }
     setLoading(false);
   }, [user]);
@@ -131,13 +121,6 @@ export default function EventCalendar() {
     }
     return ids;
   }, [customEvents]);
-
-  const myEventIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (const r of myRegs) ids.add(r.event_id);
-    for (const t of tickets) ids.add(t.event_id);
-    return ids;
-  }, [myRegs, tickets]);
 
   useEffect(() => {
     const announced = customEvents.filter((c) => {
@@ -189,7 +172,7 @@ export default function EventCalendar() {
   }
 
   const officialEvents = events
-    .filter((e) => e.starts_at && myEventIds.has(e.id))
+    .filter((e) => e.starts_at)
     .filter((e) => {
       if (category && e.category !== category) return false;
       if (query && !e.title.toLowerCase().includes(query.toLowerCase())) return false;
