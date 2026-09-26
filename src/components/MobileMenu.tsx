@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import AuthNav from "./AuthNav";
 import NavLinks from "./NavLinks";
 
@@ -15,8 +16,8 @@ export default function MobileMenu() {
     }
   }, [open]);
 
-  return (
-    <>
+  if (!open || typeof document === "undefined") {
+    return (
       <button
         onClick={() => setOpen(true)}
         aria-label="Open menu"
@@ -35,9 +36,13 @@ export default function MobileMenu() {
           <path d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
+    );
+  }
 
+  return createPortal(
+    <>
       {open && (
-        <div className="fixed inset-0 z-[100] flex flex-col bg-[#0b1121] lg:hidden">
+        <div className="fixed inset-0 z-[60] flex flex-col bg-[#0b1121] lg:hidden">
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <a
               href="/"
@@ -77,6 +82,7 @@ export default function MobileMenu() {
           </div>
         </div>
       )}
-    </>
+    </>,
+    document.body
   );
 }
