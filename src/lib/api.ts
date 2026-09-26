@@ -17,6 +17,7 @@ export type EventView = {
   registrations_enabled: boolean;
   show_registration_count: boolean;
   registration_count: number | null;
+  created_by: string | null;
   created_at: string;
 };
 

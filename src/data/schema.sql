@@ -213,14 +213,16 @@ create policy "profiles own update" on public.profiles
   for update using (auth.uid() = id);
 grant update (full_name) on public.profiles to authenticated;
 
--- events: public read; staff write
+-- events: public read; staff create; only the creator (or an admin) edits/deletes
 create policy "events read" on public.events for select using (true);
 create policy "events staff insert" on public.events
   for insert with check (public.is_staff());
+drop policy if exists "events staff update" on public.events;
 create policy "events staff update" on public.events
-  for update using (public.is_staff());
+  for update using (public.is_admin() or created_by = auth.uid());
+drop policy if exists "events staff delete" on public.events;
 create policy "events staff delete" on public.events
-  for delete using (public.is_staff());
+  for delete using (public.is_admin() or created_by = auth.uid());
 
 -- announcements: public read; staff write
 create policy "announcements read" on public.announcements for select using (true);
@@ -249,10 +251,16 @@ create policy "custom own update" on public.custom_events
 create policy "custom own delete" on public.custom_events
   for delete using (auth.uid() = user_id);
 
--- highlights: public read; staff write
+-- highlights: public read; admins or an event's own teacher broadcast
 create policy "highlights read" on public.highlights for select using (true);
+drop policy if exists "highlights staff insert" on public.highlights;
 create policy "highlights staff insert" on public.highlights
-  for insert with check (public.is_staff());
+  for insert with check (
+    public.is_admin() or exists (
+      select 1 from public.events e
+      where e.id = event_id and e.created_by = auth.uid()
+    )
+  );
 
 -- site settings: public read; admin write
 create policy "settings read" on public.site_settings for select using (true);
@@ -398,6 +406,7 @@ as $$
       'registrations_enabled', e.registrations_enabled,
       'show_registration_count', e.show_registration_count,
       'registration_count', e.registration_count,
+      'created_by', e.created_by,
       'created_at', e.created_at
     )
     order by e.starts_at nulls last, e.created_at
@@ -428,6 +437,7 @@ as $$
     'registrations_enabled', e.registrations_enabled,
     'show_registration_count', e.show_registration_count,
     'registration_count', e.registration_count,
+    'created_by', e.created_by,
     'created_at', e.created_at
   )
   from public.events e

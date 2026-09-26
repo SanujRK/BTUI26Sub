@@ -211,6 +211,7 @@ export default function AdminPanel() {
         .filter((e) =>
           e.title.toLowerCase().includes(eventQuery.trim().toLowerCase())
         )
+        .filter((e) => isAdmin || e.created_by === user?.id)
         .sort((a, b) => {
           const da = a.starts_at
             ? Math.abs(new Date(a.starts_at).getTime() - now)
@@ -335,24 +336,33 @@ export default function AdminPanel() {
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      <button
-                        onClick={() => setModal({ id: e.id })}
-                        className="rounded-lg border border-white/15 px-3 py-1.5 text-sm font-semibold text-slate-300 transition-colors hover:bg-white/5"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (window.confirm(`Delete "${e.title}"? This cannot be undone.`)) {
-                            removeEvent(e.id)
-                              .then(refresh)
-                              .catch((err) => setError(err.message));
-                          }
-                        }}
-                        className="rounded-lg border border-rose-400/40 px-3 py-1.5 text-sm font-semibold text-rose-300 transition-colors hover:bg-rose-400/10"
-                      >
-                        Delete
-                      </button>
+                      {(isAdmin || e.created_by === user?.id) && (
+                        <>
+                          <button
+                            onClick={() => setModal({ id: e.id })}
+                            className="rounded-lg border border-white/15 px-3 py-1.5 text-sm font-semibold text-slate-300 transition-colors hover:bg-white/5"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`Delete "${e.title}"? This cannot be undone.`)) {
+                                removeEvent(e.id)
+                                  .then(refresh)
+                                  .catch((err) => setError(err.message));
+                              }
+                            }}
+                            className="rounded-lg border border-rose-400/40 px-3 py-1.5 text-sm font-semibold text-rose-300 transition-colors hover:bg-rose-400/10"
+                          >
+                            Delete
+                          </button>
+                        </>
+                      )}
+                      {!isAdmin && e.created_by !== user?.id && (
+                        <span className="rounded-lg border border-white/10 px-3 py-1.5 text-sm font-semibold text-slate-500">
+                          Created by a colleague
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))}

@@ -18,6 +18,11 @@
 
 html {
   scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar {
+  display: none;
 }
 
 body {
@@ -78,11 +83,6 @@ html.light aside button {
 html.light aside button:hover {
   color: #b91c1c;
   background-color: rgba(15, 23, 42, 0.05);
-}
-
-html.light footer {
-  border-color: rgba(15, 23, 42, 0.08);
-  color: #64748b;
 }
 
 html.light :where(h1, h2, h3) {

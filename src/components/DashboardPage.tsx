@@ -421,7 +421,7 @@ export default function DashboardPage() {
           <p className="text-slate-500">No live updates yet.</p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
-            {highlights.slice(0, 8).map((h) => {
+            {highlights.slice(0, 4).map((h) => {
               const card = (
                 <div className="flex items-start gap-3">
                   <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-emerald-400" />
