@@ -71,9 +71,11 @@ from (values
 cross join public.profiles a
 where a.email = 'admin@admin.com';
 
--- The open house announces but takes no registrations; chess keeps its sign-ups private
+-- The open house announces but takes no registrations; chess keeps its sign-ups private;
+-- the cultural night shows a curated headcount instead of live registrations
 update public.events set registrations_enabled = false where title = 'Parent-Teacher Open House';
 update public.events set show_registration_count = false where title = 'Chess Rapid Round-Robin';
+update public.events set registration_count = 350 where title = 'Cultural Fest Night';
 
 -- Highlights (broadcast-style updates for the live feeds)
 insert into public.highlights (event_id, body, created_at)

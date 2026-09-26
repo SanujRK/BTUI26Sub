@@ -16,6 +16,7 @@ export type EventView = {
   tickets: number;
   registrations_enabled: boolean;
   show_registration_count: boolean;
+  registration_count: number | null;
   created_at: string;
 };
 
@@ -356,6 +357,7 @@ export type EventInput = {
   ticket_price: number;
   registrations_enabled: boolean;
   show_registration_count: boolean;
+  registration_count: number | null;
 };
 
 export async function saveEvent(
@@ -378,6 +380,7 @@ export async function saveEvent(
         ticket_price: input.ticket_price,
         registrations_enabled: input.registrations_enabled,
         show_registration_count: input.show_registration_count,
+        registration_count: input.registration_count,
       })
       .eq("id", input.id);
     if (error) throw error;
@@ -399,6 +402,7 @@ export async function saveEvent(
     ticket_price: input.ticket_price,
     registrations_enabled: input.registrations_enabled,
     show_registration_count: input.show_registration_count,
+    registration_count: input.registration_count,
     created_by: session?.user.id ?? null,
   });
   if (error) throw error;

@@ -77,7 +77,7 @@ export default function EventDetail() {
   }
 
   const capacity = event.capacity;
-  const count = capacity != null ? event.registrations : null;
+  const count = capacity != null ? event.registration_count ?? event.registrations : null;
   const full = capacity != null && count != null && count >= capacity;
   const percent = capacity && count != null ? Math.min(100, Math.round((count / capacity) * 100)) : 0;
   const registrationsOpen = event.registrations_enabled !== false;
@@ -113,7 +113,7 @@ export default function EventDetail() {
           </span>
           {event.capacity != null && showCount && (
             <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-slate-400 ring-1 ring-white/10">
-              {capacity! - event.registrations} spots left
+              {capacity! - (event.registration_count ?? event.registrations)} spots left
             </span>
           )}
         </div>

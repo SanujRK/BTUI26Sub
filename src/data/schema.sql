@@ -32,6 +32,7 @@ create table if not exists public.events (
 
 alter table public.events add column if not exists registrations_enabled boolean not null default true;
 alter table public.events add column if not exists show_registration_count boolean not null default true;
+alter table public.events add column if not exists registration_count integer;
 
 create table if not exists public.announcements (
   id uuid primary key default gen_random_uuid(),
@@ -366,7 +367,8 @@ as $$
     'registrations', (select count(*) from public.registrations r where r.event_id = e.id),
     'tickets', (select count(*) from public.tickets t where t.event_id = e.id),
     'registrations_enabled', e.registrations_enabled,
-    'show_registration_count', e.show_registration_count
+    'show_registration_count', e.show_registration_count,
+    'registration_count', e.registration_count
   )
   from public.events e
   where e.id = p_event_id;
@@ -395,6 +397,7 @@ as $$
       'tickets', (select count(*) from public.tickets t where t.event_id = e.id),
       'registrations_enabled', e.registrations_enabled,
       'show_registration_count', e.show_registration_count,
+      'registration_count', e.registration_count,
       'created_at', e.created_at
     )
     order by e.starts_at nulls last, e.created_at
@@ -424,6 +427,7 @@ as $$
     'tickets', (select count(*) from public.tickets t where t.event_id = e.id),
     'registrations_enabled', e.registrations_enabled,
     'show_registration_count', e.show_registration_count,
+    'registration_count', e.registration_count,
     'created_at', e.created_at
   )
   from public.events e

@@ -127,6 +127,13 @@ export default function EventCalendar() {
     return ids;
   }, [customEvents]);
 
+  const myEventIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const r of myRegs) ids.add(r.event_id);
+    for (const t of tickets) ids.add(t.event_id);
+    return ids;
+  }, [myRegs, tickets]);
+
   useEffect(() => {
     const announced = customEvents.filter((c) => {
       if (c.notified_at || !c.event_id) return false;
@@ -175,13 +182,6 @@ export default function EventCalendar() {
   if (loading) {
     return <p className="py-16 text-center text-slate-500">Loading calendar…</p>;
   }
-
-  const myEventIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (const r of myRegs) ids.add(r.event_id);
-    for (const t of tickets) ids.add(t.event_id);
-    return ids;
-  }, [myRegs, tickets]);
 
   const officialEvents = events
     .filter((e) => e.starts_at && myEventIds.has(e.id))

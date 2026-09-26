@@ -42,6 +42,7 @@ type FormState = {
   ticket_price: string;
   registrations_enabled: boolean;
   show_registration_count: boolean;
+  registration_count: string;
 };
 
 const emptyForm: FormState = {
@@ -57,6 +58,7 @@ const emptyForm: FormState = {
   ticket_price: "0",
   registrations_enabled: true,
   show_registration_count: true,
+  registration_count: "",
 };
 
 function toLocalInput(iso: string | null): string {
@@ -329,7 +331,7 @@ export default function AdminPanel() {
                           : "Date TBD"}{" "}
                         · {e.venue}
                         {e.show_registration_count !== false &&
-                          ` · ${e.registrations}${e.capacity ? `/${e.capacity}` : ""} registered`}
+                          ` · ${e.registration_count ?? e.registrations}${e.capacity ? `/${e.capacity}` : ""} registered`}
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -687,6 +689,8 @@ function EventModal({
           ticket_price: String(event.ticket_price),
           registrations_enabled: event.registrations_enabled !== false,
           show_registration_count: event.show_registration_count !== false,
+          registration_count:
+            event.registration_count != null ? String(event.registration_count) : "",
         }
       : emptyForm
   );
@@ -712,6 +716,9 @@ function EventModal({
         ticket_price: Number(form.ticket_price) || 0,
         registrations_enabled: form.registrations_enabled,
         show_registration_count: form.show_registration_count,
+        registration_count: form.registration_count
+          ? Number(form.registration_count)
+          : null,
         id: event?.id,
       });
       await onDone();
@@ -871,6 +878,20 @@ function EventModal({
                 No
               </button>
             </div>
+            {form.show_registration_count && (
+              <div className="ml-auto w-36">
+                <input
+                  type="number"
+                  min={0}
+                  value={form.registration_count}
+                  onChange={(e) => set("registration_count", e.target.value)}
+                  className={input}
+                  placeholder="Amount"
+                  title="Leave blank to show the real headcount"
+                />
+                <p className="mt-0.5 text-xs text-slate-600">Blank = real headcount</p>
+              </div>
+            )}
           </div>
         </div>
         <div className="mt-6 flex justify-end gap-2">

@@ -87,11 +87,11 @@ export default function DashboardPage() {
 
   useEffect(() => {
     let alive = true;
-    getRecentHighlights(8)
+    getRecentHighlights(40)
       .then((h) => alive && setHighlights(h))
       .catch(() => undefined);
     const unsub = subscribeToAllHighlights((h) =>
-      setHighlights((prev) => [h, ...prev].slice(0, 8))
+      setHighlights((prev) => [h, ...prev].slice(0, 40))
     );
     return () => {
       alive = false;
@@ -185,6 +185,10 @@ export default function DashboardPage() {
 
   const registeredIds = useMemo(() => new Set(items.map((r) => r.event_id)), [items]);
 
+  const myHighlight = highlights.find(
+    (h) => h.event_id && registeredIds.has(h.event_id)
+  );
+
   const pinEvent = async (e: EventView) => {
     if (pinnedIds.has(e.id) || !e.starts_at) return;
     try {
@@ -263,6 +267,29 @@ export default function DashboardPage() {
             {tbd.length > 0 && `${tbd.length} event${tbd.length === 1 ? "" : "s"} waiting on dates`}
           </span>
         </h1>
+        {myHighlight && (
+          <a
+            href={myHighlight.event_id ? `/event?id=${myHighlight.event_id}` : undefined}
+            className="card card-ring group flex w-full max-w-sm items-start gap-3 rounded-2xl px-4 py-3 transition-all hover:-translate-y-0.5 hover:bg-white/[0.07]"
+          >
+            <span className="relative mt-1.5 flex h-2 w-2 shrink-0">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm leading-snug text-slate-200 group-hover:text-white">
+                {myHighlight.body}
+              </span>
+              <span className="mt-1 block truncate text-xs text-slate-500">
+                {myHighlight.event_title && (
+                  <span className="font-semibold text-indigo-300">{myHighlight.event_title}</span>
+                )}
+                {myHighlight.event_title && <span> · </span>}
+                {timeAgo(myHighlight.created_at)}
+              </span>
+            </span>
+          </a>
+        )}
       </div>
 
       <section className="card card-ring rounded-2xl p-5">
@@ -393,14 +420,14 @@ export default function DashboardPage() {
         {highlights.length === 0 ? (
           <p className="text-slate-500">No live updates yet.</p>
         ) : (
-          <div className="overflow-hidden rounded-xl ring-1 ring-white/10">
-            {highlights.map((h, i) => {
-              const row = (
-                <div className="flex items-start gap-3 px-4 py-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {highlights.slice(0, 8).map((h) => {
+              const card = (
+                <div className="flex items-start gap-3">
                   <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-emerald-400" />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-slate-200">{h.body}</p>
-                    <p className="mt-0.5 text-xs text-slate-500">
+                    <p className="text-sm leading-snug text-slate-200">{h.body}</p>
+                    <p className="mt-1 text-xs text-slate-500">
                       {h.event_title && (
                         <span className="font-semibold text-indigo-300">{h.event_title}</span>
                       )}
@@ -410,20 +437,17 @@ export default function DashboardPage() {
                   </div>
                 </div>
               );
-              return (
-                <div
+              return h.event_id ? (
+                <a
                   key={h.id}
-                  className={
-                    i % 2 === 0 ? "bg-white/[0.05]" : "bg-white/[0.02]"
-                  }
+                  href={`/event?id=${h.event_id}`}
+                  className="card card-ring group rounded-xl bg-white/[0.04] p-4 transition-all hover:-translate-y-0.5 hover:bg-white/[0.07]"
                 >
-                  {h.event_id ? (
-                    <a href={`/event?id=${h.event_id}`} className="block transition-colors hover:bg-white/[0.08]">
-                      {row}
-                    </a>
-                  ) : (
-                    row
-                  )}
+                  {card}
+                </a>
+              ) : (
+                <div key={h.id} className="card card-ring rounded-xl bg-white/[0.04] p-4">
+                  {card}
                 </div>
               );
             })}
