@@ -44,6 +44,7 @@ create table if not exists public.announcements (
 );
 
 -- every announcement is an event, one per event
+alter table public.announcements drop constraint if exists announcements_event_unique;
 alter table public.announcements add constraint announcements_event_unique unique (event_id);
 
 -- events and announcements are the same thing: mirror each event into the
