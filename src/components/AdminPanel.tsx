@@ -280,12 +280,12 @@ export default function AdminPanel() {
           <section>
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-lg font-bold tracking-tight">Manage events</h2>
-              <div className="flex items-center gap-2">
+              <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                 <input
                   value={eventQuery}
                   onChange={(e) => setEventQuery(e.target.value)}
                   placeholder="Search events…"
-                  className="w-56 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400"
+                  className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400 sm:w-56"
                 />
                 <button
                   onClick={() => setModal({})}
@@ -403,7 +403,7 @@ export default function AdminPanel() {
                       setHiForm((f) => ({ ...f, event_id: "" }));
                       setEventQuery("");
                     }}
-                    className="rounded-lg px-2 py-1 text-xs font-bold text-slate-400 hover:bg-white/5 hover:text-white"
+                    className="rounded-lg px-3 py-2 text-xs font-bold text-slate-400 hover:bg-white/5 hover:text-white sm:px-2 sm:py-1"
                   >
                     Change
                   </button>
@@ -484,7 +484,7 @@ export default function AdminPanel() {
 
         {isAdmin && tab === "Appearance" && (
           <section className="card card-ring rounded-2xl p-5">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-lg font-bold tracking-tight">Site-wide theme</h2>
               <div className="flex gap-2">
                 <button
@@ -531,7 +531,7 @@ export default function AdminPanel() {
                   </label>
                 ))}
               </div>
-              <div className="mt-5 flex items-center gap-2">
+              <div className="mt-5 flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => saveColours()}
                   className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
@@ -668,7 +668,7 @@ function TeacherRow({
           <button
             onClick={onFlip}
             disabled={busy}
-            className="rounded-lg border border-white/15 px-2 py-1 text-xs font-semibold text-slate-300 transition-colors hover:bg-white/5 disabled:opacity-50"
+            className="rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-slate-300 transition-colors hover:bg-white/5 disabled:opacity-50 sm:px-2 sm:py-1"
           >
             {busy ? "…" : p.role === "teacher" ? "Demote" : "Promote"}
           </button>
@@ -748,8 +748,8 @@ function EventModal({
   const label = "text-sm font-semibold text-slate-400";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="card card-ring w-full max-w-2xl rounded-2xl p-6">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 sm:items-center">
+      <div className="card card-ring w-full max-w-2xl rounded-2xl p-6 max-h-[85dvh] overflow-y-auto">
         <h3 className="text-lg font-bold text-white">
           {event ? "Edit event" : "New event"}
         </h3>
@@ -833,7 +833,7 @@ function EventModal({
               placeholder="What students should know about this event…"
             />
           </div>
-          <div className="flex items-center gap-3 sm:col-span-2">
+          <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
             <input
               type="checkbox"
               checked={form.is_ticketed}
@@ -842,7 +842,7 @@ function EventModal({
             />
             <label className="text-sm font-semibold text-slate-300">Ticketed event</label>
             {form.is_ticketed && (
-              <div className="ml-auto w-40">
+              <div className="w-full sm:ml-auto sm:w-40">
                 <input
                   type="number"
                   min={0}
@@ -869,7 +869,7 @@ function EventModal({
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3 sm:col-span-2">
+          <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
             <span className="text-sm font-semibold text-slate-300">Show registration count</span>
             <div className="flex rounded-lg border border-white/15 p-0.5">
               <button
@@ -894,7 +894,7 @@ function EventModal({
               </button>
             </div>
             {form.show_registration_count && (
-              <div className="ml-auto w-36">
+              <div className="w-full sm:ml-auto sm:w-36">
                 <input
                   type="number"
                   min={0}

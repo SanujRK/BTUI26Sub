@@ -154,9 +154,9 @@ export default function AccountSettings() {
             {initials(user.fullName || user.email)}
           </div>
         )}
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-white">{user.fullName}</h1>
-          <p className="text-sm text-slate-500">{user.email}</p>
+        <div className="min-w-0">
+          <h1 className="truncate text-2xl font-black tracking-tight text-white">{user.fullName}</h1>
+          <p className="truncate text-sm text-slate-500">{user.email}</p>
         </div>
       </div>
 

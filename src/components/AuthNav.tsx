@@ -8,7 +8,7 @@ function initials(name: string) {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
-export default function AuthNav() {
+export default function AuthNav({ compact = false }: { compact?: boolean }) {
   const { user, loading } = useUser();
 
   if (loading) return null;
@@ -17,9 +17,24 @@ export default function AuthNav() {
     return (
       <a
         href="/login"
-        className="whitespace-nowrap rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+        className="whitespace-nowrap rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
       >
-        Sign in
+        {compact ? (
+          <svg
+            className="h-5 w-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" />
+          </svg>
+        ) : (
+          "Sign in"
+        )}
       </a>
     );
   }
@@ -38,31 +53,35 @@ export default function AuthNav() {
           initials(user.fullName || user.email)
         )}
       </a>
-      <a
-        href="/account"
-        title="Account settings"
-        className="min-w-0 flex-1 truncate rounded-lg px-1 text-sm font-semibold text-slate-200 transition-colors hover:text-white"
-      >
-        {user.fullName || user.email}
-      </a>
-      <button
-        onClick={() => signOut().then(() => window.location.assign("/"))}
-        title="Sign out"
-        aria-label="Sign out"
-        className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/15 text-slate-300 transition-colors hover:bg-white/5 hover:text-rose-400"
-      >
-        <svg
-          className="h-4 w-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
-        </svg>
-      </button>
+{!compact && (
+        <>
+          <a
+            href="/account"
+            title="Account settings"
+            className="min-w-0 flex-1 truncate rounded-lg px-1 text-sm font-semibold text-slate-200 transition-colors hover:text-white"
+          >
+            {user.fullName || user.email}
+          </a>
+          <button
+            onClick={() => signOut().then(() => window.location.assign("/"))}
+            title="Sign out"
+            aria-label="Sign out"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/15 text-slate-300 transition-colors hover:bg-white/5 hover:text-rose-400"
+          >
+            <svg
+              className="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
+            </svg>
+          </button>
+        </>
+      )}
     </div>
   );
 }

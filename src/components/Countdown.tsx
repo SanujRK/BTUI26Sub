@@ -54,10 +54,10 @@ export default function Countdown({ target, label }: Props) {
   ];
 
   return (
-    <div className="flex items-end gap-2">
+    <div className="flex flex-wrap items-end gap-1.5 sm:flex-nowrap sm:gap-2">
       {cells.map(([name, value]) => (
-        <div key={name} className="flex min-w-14 flex-col items-center">
-          <span className="rounded-xl bg-white/5 px-3 py-2 text-2xl font-bold tabular-nums ring-1 ring-white/10">
+        <div key={name} className="flex min-w-11 flex-col items-center sm:min-w-14">
+          <span className="rounded-xl bg-white/5 px-2 py-2 text-xl font-bold tabular-nums ring-1 ring-white/10 sm:px-3 sm:text-2xl">
             {String(value).padStart(2, "0")}
           </span>
           <span className="mt-1 text-[10px] uppercase tracking-wider text-slate-500">

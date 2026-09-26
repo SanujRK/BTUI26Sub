@@ -297,7 +297,7 @@ export default function DashboardPage() {
           <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400">Your week</h2>
           <span className="text-xs text-slate-500">Pick a day</span>
         </div>
-        <div className="mt-4 grid grid-cols-7 gap-2">
+        <div className="mt-4 grid grid-cols-7 gap-1 sm:gap-2">
           {DAY_NAMES.map((name, i) => {
             const count = byDay[i].length;
             const active = day === i;
@@ -314,7 +314,7 @@ export default function DashboardPage() {
                     : "bg-white/5 text-slate-300 ring-1 ring-white/10 hover:bg-white/10"
                 }`}
               >
-                <span className="text-xs font-semibold uppercase tracking-wide">{name}</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wide sm:text-xs">{name}</span>
                 <span className={`text-base leading-none ${active ? "text-[#0d0f18]" : count > 0 ? "text-violet-300" : "text-slate-600"}`}>
                   {count}
                 </span>
@@ -493,7 +493,7 @@ export default function DashboardPage() {
                       }}
                       aria-label={pinnedIds.has(e.id) ? "Added to calendar" : "Add to calendar"}
                       title={pinnedIds.has(e.id) ? "Added to calendar" : "Add to calendar"}
-                      className={`flex h-6 w-6 items-center justify-center rounded-full text-sm font-bold transition-colors ${
+                      className={`flex h-9 w-9 items-center justify-center rounded-full text-base font-bold transition-colors sm:h-6 sm:w-6 sm:text-sm ${
                         pinnedIds.has(e.id)
                           ? "bg-indigo-400/20 text-indigo-200 ring-1 ring-indigo-400/40"
                           : "bg-white/10 text-slate-200 ring-1 ring-white/20 hover:bg-indigo-500 hover:text-white"

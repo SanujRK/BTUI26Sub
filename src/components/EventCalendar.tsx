@@ -243,7 +243,7 @@ export default function EventCalendar() {
             <button
               key={v}
               onClick={() => setView(v)}
-              className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
+              className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors sm:py-1.5 ${
                 view === v
                   ? "bg-indigo-600 text-white"
                   : "border border-white/15 text-slate-300 hover:bg-white/5"
@@ -256,7 +256,7 @@ export default function EventCalendar() {
         {user && (
           <button
             onClick={() => setModal({ kind: "create", start: new Date().toISOString() })}
-            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+            className="rounded-lg bg-indigo-600 px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 sm:py-1.5"
           >
             + Custom reminder
           </button>
@@ -589,7 +589,7 @@ function CustomModal({
             />
           </div>
         )}
-        <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="text-sm font-semibold text-slate-400">Time</label>
             <input
@@ -646,7 +646,7 @@ function CustomModal({
             {errorMsg}
           </p>
         )}
-        <div className="mt-6 flex justify-end gap-2">
+        <div className="mt-6 flex flex-wrap justify-end gap-2">
           {onDelete && (
             <button
               onClick={() => onDelete()}

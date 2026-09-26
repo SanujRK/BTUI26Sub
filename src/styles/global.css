@@ -28,6 +28,7 @@ html::-webkit-scrollbar {
 body {
   background-color: var(--bg-page);
   color: var(--text-primary);
+  overflow-x: hidden;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
 }
@@ -249,9 +250,15 @@ html.light .fc .fc-daygrid-more-link {
   font-size: 0.9rem;
 }
 
+.fc .fc-toolbar {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .fc .fc-toolbar-title {
   color: #f1f5f9;
   font-weight: 700;
+  font-size: 1rem;
 }
 
 .fc .fc-button {

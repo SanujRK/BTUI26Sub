@@ -109,7 +109,7 @@ export default function AnnouncementsFeed() {
                 disabled={isAdded(a)}
                 aria-label={isAdded(a) ? "Added to calendar" : "Add to calendar"}
                 title={isAdded(a) ? "Added to calendar" : "Add to calendar"}
-                className={`ml-auto flex h-6 w-6 items-center justify-center rounded-full text-sm font-bold transition-colors disabled:cursor-default ${
+                className={`ml-auto flex h-9 w-9 items-center justify-center rounded-full text-base font-bold transition-colors disabled:cursor-default sm:h-6 sm:w-6 sm:text-sm ${
                   isAdded(a)
                     ? "bg-indigo-400/20 text-indigo-200 ring-1 ring-indigo-400/40"
                     : "bg-white/10 text-slate-200 ring-1 ring-white/20 hover:bg-indigo-500 hover:text-white"
@@ -184,7 +184,7 @@ function DateTimeModal({
         <p className="mt-1 text-xs text-slate-500">
           Add this as a reminder on your calendar.
         </p>
-        <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="text-sm font-semibold text-slate-400">Time</label>
             <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={field} />

@@ -27,7 +27,7 @@ export default function AuthForm() {
   }
 
   return (
-    <div className="card card-ring w-full max-w-md px-8 py-8">
+    <div className="card card-ring w-full max-w-md px-5 py-8 sm:px-8">
       <h2 className="text-2xl font-bold tracking-tight">
         {mode === "signin" ? "Welcome back" : "Create an account"}
       </h2>

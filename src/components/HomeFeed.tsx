@@ -102,7 +102,7 @@ export default function HomeFeed() {
 function NextEventHero({ event }: { event: EventView }) {
   const spots = event.capacity ? `${event.registrations} / ${event.capacity}` : `${event.registrations} joined`;
   return (
-    <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700 p-8 text-white">
+    <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700 p-6 text-white sm:p-8">
       <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle at 20% 30%, white 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
       <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <div className="max-w-xl">

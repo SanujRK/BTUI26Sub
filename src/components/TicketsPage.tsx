@@ -142,7 +142,7 @@ export default function TicketsPage() {
             {tickets.map((t) => (
               <div key={t.id} className="card card-ring rounded-2xl p-5">
                 <div className="flex items-start justify-between gap-3">
-                  <div>
+                  <div className="min-w-0">
                     <span className={`category-chip ring-1 ${categoryClass(t.category)}`}>
                       {t.category}
                     </span>
