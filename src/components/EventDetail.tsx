@@ -80,6 +80,8 @@ export default function EventDetail() {
   const count = capacity != null ? event.registrations : null;
   const full = capacity != null && count != null && count >= capacity;
   const percent = capacity && count != null ? Math.min(100, Math.round((count / capacity) * 100)) : 0;
+  const registrationsOpen = event.registrations_enabled !== false;
+  const showCount = event.show_registration_count !== false;
   const price =
     event.is_ticketed && event.ticket_price > 0
       ? event.ticket_price % 1 === 0
@@ -109,7 +111,7 @@ export default function EventDetail() {
           <span className={`category-chip rounded-full px-3 py-1 text-xs font-bold ring-1 ${categoryClass(event.category)}`}>
             {event.category}
           </span>
-          {event.capacity != null && (
+          {event.capacity != null && showCount && (
             <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-slate-400 ring-1 ring-white/10">
               {capacity! - event.registrations} spots left
             </span>
@@ -167,7 +169,7 @@ export default function EventDetail() {
 
         <p className="mt-6 text-slate-300">{event.description}</p>
 
-        {capacity != null && (
+        {capacity != null && showCount && (
           <div className="card card-ring mt-6 rounded-2xl p-5">
             <div className="flex items-baseline justify-between text-sm">
               <span className="font-semibold text-slate-300">
@@ -219,7 +221,12 @@ export default function EventDetail() {
                 href="/login"
                 className="block w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
               >
-                Sign in to {event.is_ticketed ? "buy a ticket" : "register"}
+                Sign in to{" "}
+                {event.is_ticketed
+                  ? "buy a ticket"
+                  : registrationsOpen
+                    ? "register"
+                    : "follow this event"}
               </a>
             </>
           )}
@@ -231,7 +238,7 @@ export default function EventDetail() {
             </div>
           )}
 
-          {user && !event.is_ticketed && !registered && (
+          {user && !event.is_ticketed && !registered && registrationsOpen && (
             <button
               onClick={() => act(() => registerForEvent(event.id))}
               disabled={busy || full}
@@ -239,6 +246,12 @@ export default function EventDetail() {
             >
               {full ? "Event is full" : "Register"}
             </button>
+          )}
+
+          {user && !event.is_ticketed && !registered && !registrationsOpen && (
+            <p className="rounded-lg bg-white/5 px-4 py-3 text-center text-sm font-semibold text-slate-400 ring-1 ring-white/10">
+              Registrations are closed
+            </p>
           )}
 
           {user && event.is_ticketed && ticketed && (

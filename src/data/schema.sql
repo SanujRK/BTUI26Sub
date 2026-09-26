@@ -30,6 +30,9 @@ create table if not exists public.events (
   created_at timestamptz not null default now()
 );
 
+alter table public.events add column if not exists registrations_enabled boolean not null default true;
+alter table public.events add column if not exists show_registration_count boolean not null default true;
+
 create table if not exists public.announcements (
   id uuid primary key default gen_random_uuid(),
   title text not null,
@@ -38,6 +41,46 @@ create table if not exists public.announcements (
   event_id uuid references public.events(id) on delete set null,
   created_at timestamptz not null default now()
 );
+
+-- every announcement is an event, one per event
+alter table public.announcements add constraint announcements_event_unique unique (event_id);
+
+-- events and announcements are the same thing: mirror each event into the
+-- announcements feed automatically
+create or replace function public.sync_event_announcement()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_author text;
+begin
+  select coalesce(p.full_name, 'Admin') into v_author
+  from public.profiles p
+  where p.id = new.created_by;
+
+  if tg_op = 'INSERT' then
+    insert into public.announcements (title, body, author, event_id)
+    values (new.title, new.description, coalesce(v_author, 'Admin'), new.id)
+    on conflict (event_id) do update
+      set title = excluded.title, body = excluded.body, author = excluded.author;
+  elsif tg_op = 'UPDATE' then
+    update public.announcements
+      set title = new.title, body = new.description, author = coalesce(v_author, 'Admin')
+    where event_id = new.id;
+  elsif tg_op = 'DELETE' then
+    delete from public.announcements where event_id = old.id;
+  end if;
+
+  return null;
+end;
+$$;
+
+drop trigger if exists events_sync_announcement on public.events;
+create trigger events_sync_announcement
+  after insert or update or delete on public.events
+  for each row execute procedure public.sync_event_announcement();
 
 create table if not exists public.registrations (
   id uuid primary key default gen_random_uuid(),
@@ -231,19 +274,24 @@ declare
   v_user uuid := auth.uid();
   v_capacity integer;
   v_ticketed boolean;
+  v_registrations boolean;
   v_count integer;
 begin
   if v_user is null then
     return 'sign in to register';
   end if;
 
-  select capacity, is_ticketed into v_capacity, v_ticketed
+  select capacity, is_ticketed, registrations_enabled
+  into v_capacity, v_ticketed, v_registrations
   from public.events where id = p_event_id for update;
   if not found then
     return 'event not found';
   end if;
   if v_ticketed then
     return 'this event needs a ticket';
+  end if;
+  if not v_registrations then
+    return 'registrations closed';
   end if;
 
   if v_capacity is not null then
@@ -316,7 +364,9 @@ as $$
   select jsonb_build_object(
     'capacity', e.capacity,
     'registrations', (select count(*) from public.registrations r where r.event_id = e.id),
-    'tickets', (select count(*) from public.tickets t where t.event_id = e.id)
+    'tickets', (select count(*) from public.tickets t where t.event_id = e.id),
+    'registrations_enabled', e.registrations_enabled,
+    'show_registration_count', e.show_registration_count
   )
   from public.events e
   where e.id = p_event_id;
@@ -343,6 +393,8 @@ as $$
       'ticket_price', e.ticket_price,
       'registrations', (select count(*) from public.registrations r where r.event_id = e.id),
       'tickets', (select count(*) from public.tickets t where t.event_id = e.id),
+      'registrations_enabled', e.registrations_enabled,
+      'show_registration_count', e.show_registration_count,
       'created_at', e.created_at
     )
     order by e.starts_at nulls last, e.created_at
@@ -370,6 +422,8 @@ as $$
     'ticket_price', e.ticket_price,
     'registrations', (select count(*) from public.registrations r where r.event_id = e.id),
     'tickets', (select count(*) from public.tickets t where t.event_id = e.id),
+    'registrations_enabled', e.registrations_enabled,
+    'show_registration_count', e.show_registration_count,
     'created_at', e.created_at
   )
   from public.events e

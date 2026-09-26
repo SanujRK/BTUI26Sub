@@ -14,6 +14,8 @@ export type EventView = {
   ticket_price: number;
   registrations: number;
   tickets: number;
+  registrations_enabled: boolean;
+  show_registration_count: boolean;
   created_at: string;
 };
 
@@ -352,6 +354,8 @@ export type EventInput = {
   image_url: string | null;
   is_ticketed: boolean;
   ticket_price: number;
+  registrations_enabled: boolean;
+  show_registration_count: boolean;
 };
 
 export async function saveEvent(
@@ -372,6 +376,8 @@ export async function saveEvent(
         image_url: input.image_url,
         is_ticketed: input.is_ticketed,
         ticket_price: input.ticket_price,
+        registrations_enabled: input.registrations_enabled,
+        show_registration_count: input.show_registration_count,
       })
       .eq("id", input.id);
     if (error) throw error;
@@ -391,6 +397,8 @@ export async function saveEvent(
     image_url: input.image_url,
     is_ticketed: input.is_ticketed,
     ticket_price: input.ticket_price,
+    registrations_enabled: input.registrations_enabled,
+    show_registration_count: input.show_registration_count,
     created_by: session?.user.id ?? null,
   });
   if (error) throw error;

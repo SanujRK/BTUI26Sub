@@ -3,7 +3,6 @@ import Guard from "./Guard";
 import { useUser } from "../hooks/useUser";
 import {
   getEvents,
-  getAnnouncements,
   getRecentHighlights,
   getProfiles,
   changeUserRole,
@@ -13,11 +12,8 @@ import {
   setPalette,
   saveEvent,
   removeEvent,
-  postAnnouncement,
-  removeAnnouncement,
   postHighlight,
   type EventView,
-  type Announcement,
   type Highlight,
   type ProfileRow,
 } from "../lib/api";
@@ -28,7 +24,6 @@ const CATEGORIES = ["Debate", "Sports", "Exhibition", "Culture", "Tech", "Genera
 
 const TAB_ICONS: Record<string, string> = {
   Events: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4",
-  Announcements: "M3 11l18-5v12L3 14v-3zM11.6 16.8a3 3 0 11-5.8-1.6",
   Highlights: "M13 10V3L4 14h7v7l9-11h-7z",
   Appearance: "M12 3a9 9 0 100 18 9 9 0 000-18zm0 0l2 2-1 3h-2l-1-3 2-2zm0 6a3 3 0 110 6 3 3 0 010-6z",
   Teachers: "M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zm11-2h-6m3 3V6",
@@ -45,6 +40,8 @@ type FormState = {
   image_url: string;
   is_ticketed: boolean;
   ticket_price: string;
+  registrations_enabled: boolean;
+  show_registration_count: boolean;
 };
 
 const emptyForm: FormState = {
@@ -58,6 +55,8 @@ const emptyForm: FormState = {
   image_url: "",
   is_ticketed: false,
   ticket_price: "0",
+  registrations_enabled: true,
+  show_registration_count: true,
 };
 
 function toLocalInput(iso: string | null): string {
@@ -73,17 +72,16 @@ export default function AdminPanel() {
   const { user } = useUser();
   const isAdmin = user?.role === "admin";
   const tabs = isAdmin
-    ? ["Events", "Announcements", "Highlights", "Appearance", "Teachers"]
-    : ["Events", "Announcements", "Highlights"];
+    ? ["Events", "Highlights", "Appearance", "Teachers"]
+    : ["Events", "Highlights"];
   const [tab, setTab] = useState<string>(tabs[0]);
   const [events, setEvents] = useState<EventView[]>([]);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [modal, setModal] = useState<{ id?: string } | null>(null);
-  const [annForm, setAnnForm] = useState({ title: "", body: "", event_id: "" });
   const [hiForm, setHiForm] = useState({ event_id: "", body: "" });
+  const [eventQuery, setEventQuery] = useState("");
   const [feedback, setFeedback] = useState("");
   const [theme, setThemeState] = useState<"dark" | "light">("dark");
   const [palette, setPaletteState] = useState<SitePalette>(DEFAULT_PALETTE);
@@ -96,13 +94,8 @@ export default function AdminPanel() {
   };
 
   const refreshAll = async () => {
-    const [ev, ann, hi] = await Promise.all([
-      getEvents(),
-      getAnnouncements(),
-      getRecentHighlights(),
-    ]);
+    const [ev, hi] = await Promise.all([getEvents(), getRecentHighlights()]);
     setEvents(ev);
-    setAnnouncements(ann);
     setHighlights(hi);
   };
 
@@ -111,15 +104,13 @@ export default function AdminPanel() {
       .then((ev) => {
         setEvents(ev);
         return Promise.all([
-          getAnnouncements(),
           getRecentHighlights(),
           getTheme(),
           getProfiles(),
           getPalette(),
         ]);
       })
-      .then(([ann, hi, t, prof, pal]) => {
-        setAnnouncements(ann);
+      .then(([hi, t, prof, pal]) => {
         setHighlights(hi);
         setThemeState((t as "dark" | "light") ?? "dark");
         setProfiles(prof);
@@ -183,28 +174,12 @@ export default function AdminPanel() {
     setRoleBusy("");
   };
 
-  const submitAnnouncement = async () => {
-    if (!annForm.title.trim() || !annForm.body.trim() || !user) return;
-    try {
-      await postAnnouncement({
-        title: annForm.title.trim(),
-        body: annForm.body.trim(),
-        author: user.fullName,
-        event_id: annForm.event_id || null,
-      });
-      setAnnForm({ title: "", body: "", event_id: "" });
-      setFeedback("Announcement posted.");
-      await refreshAll();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to post announcement.");
-    }
-  };
-
   const submitHighlight = async () => {
     if (!hiForm.event_id || !hiForm.body.trim()) return;
     try {
       await postHighlight({ event_id: hiForm.event_id, body: hiForm.body.trim() });
       setHiForm({ event_id: "", body: "" });
+      setEventQuery("");
       setFeedback("Highlight broadcast live.");
       await refreshAll();
     } catch (err) {
@@ -213,7 +188,6 @@ export default function AdminPanel() {
   };
 
   const input = "w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400";
-  const optionCls = "bg-(--bg-page)";
 
   const matches = search.trim()
     ? profiles.filter(
@@ -222,6 +196,32 @@ export default function AdminPanel() {
           p.email.toLowerCase().includes(search.trim().toLowerCase())
       )
     : [];
+
+  const filteredEvents = eventQuery.trim()
+    ? events.filter((e) =>
+        e.title.toLowerCase().includes(eventQuery.trim().toLowerCase())
+      )
+    : events;
+
+  const now = Date.now();
+  const eventSuggestions = eventQuery.trim()
+    ? [...events]
+        .filter((e) =>
+          e.title.toLowerCase().includes(eventQuery.trim().toLowerCase())
+        )
+        .sort((a, b) => {
+          const da = a.starts_at
+            ? Math.abs(new Date(a.starts_at).getTime() - now)
+            : Infinity;
+          const db = b.starts_at
+            ? Math.abs(new Date(b.starts_at).getTime() - now)
+            : Infinity;
+          return da - db;
+        })
+        .slice(0, 8)
+    : [];
+
+  const teachers = profiles.filter((p) => p.role === "teacher");
 
   return (
     <Guard roles={["teacher", "admin"]}>
@@ -270,22 +270,32 @@ export default function AdminPanel() {
 
         {tab === "Events" && (
           <section>
-            <div className="mb-3 flex items-center justify-between">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-lg font-bold tracking-tight">Manage events</h2>
-              <button
-                onClick={() => setModal({})}
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
-              >
-                + New event
-              </button>
+              <div className="flex items-center gap-2">
+                <input
+                  value={eventQuery}
+                  onChange={(e) => setEventQuery(e.target.value)}
+                  placeholder="Search events…"
+                  className="w-56 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400"
+                />
+                <button
+                  onClick={() => setModal({})}
+                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+                >
+                  + New event
+                </button>
+              </div>
             </div>
             {loading ? (
               <p className="py-8 text-center text-slate-500">Loading events…</p>
-            ) : events.length === 0 ? (
-              <p className="text-slate-500">No events yet.</p>
+            ) : filteredEvents.length === 0 ? (
+              <p className="text-slate-500">
+                {eventQuery.trim() ? "No events match your search." : "Every event is an announcement — create one and it shows up on the home feed and calendar automatically."}
+              </p>
             ) : (
               <div className="flex flex-col gap-2">
-                {events.map((e) => (
+                {filteredEvents.map((e) => (
                   <div
                     key={e.id}
                     className="card card-ring flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4"
@@ -300,6 +310,11 @@ export default function AdminPanel() {
                             Ticketed
                           </span>
                         )}
+                        {e.registrations_enabled === false && (
+                          <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-400 ring-1 ring-white/10">
+                            Registrations off
+                          </span>
+                        )}
                       </div>
                       <h3 className="mt-1.5 truncate font-semibold text-slate-100">{e.title}</h3>
                       <p className="truncate text-sm text-slate-400">
@@ -312,8 +327,9 @@ export default function AdminPanel() {
                               minute: "2-digit",
                             })
                           : "Date TBD"}{" "}
-                        · {e.venue} · {e.registrations}
-                        {e.capacity ? `/${e.capacity}` : ""} registered
+                        · {e.venue}
+                        {e.show_registration_count !== false &&
+                          ` · ${e.registrations}${e.capacity ? `/${e.capacity}` : ""} registered`}
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -343,76 +359,6 @@ export default function AdminPanel() {
           </section>
         )}
 
-        {tab === "Announcements" && (
-          <section className="card card-ring rounded-2xl p-5">
-            <h2 className="text-lg font-bold tracking-tight">Post announcement</h2>
-            <p className="mt-1 text-xs text-slate-500">
-              Shows up on the home page, dashboard, and the announcements feed.
-            </p>
-            <div className="mt-4 space-y-3">
-              <input
-                value={annForm.title}
-                onChange={(e) => setAnnForm((f) => ({ ...f, title: e.target.value }))}
-                placeholder="Title"
-                className={input}
-              />
-              <textarea
-                value={annForm.body}
-                onChange={(e) => setAnnForm((f) => ({ ...f, body: e.target.value }))}
-                placeholder="What everyone should know…"
-                className={`${input} min-h-24 resize-y`}
-              />
-              <select
-                value={annForm.event_id}
-                onChange={(e) => setAnnForm((f) => ({ ...f, event_id: e.target.value }))}
-                className={input}
-              >
-                <option value="" className={optionCls}>
-                  No linked event
-                </option>
-                {events.map((e) => (
-                  <option key={e.id} value={e.id} className={optionCls}>
-                    {e.title}
-                  </option>
-                ))}
-              </select>
-              <button
-                onClick={() => submitAnnouncement()}
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
-              >
-                Publish announcement
-              </button>
-            </div>
-            {announcements.length > 0 && (
-              <div className="mt-5 space-y-2 border-t border-white/10 pt-4">
-                {announcements.slice(0, 5).map((a) => (
-                  <div
-                    key={a.id}
-                    className="flex items-center justify-between gap-3 rounded-xl bg-white/5 px-3 py-2 ring-1 ring-white/10"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-slate-200">{a.title}</p>
-                      <p className="truncate text-xs text-slate-500">
-                        {a.author} · {new Date(a.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() =>
-                        removeAnnouncement(a.id)
-                          .then(refreshAll)
-                          .catch((err) => setError(err.message))
-                      }
-                      className="rounded-lg px-2 py-1 text-xs font-bold text-rose-300 hover:bg-rose-400/10"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-        )}
-
         {tab === "Highlights" && (
           <section className="card card-ring rounded-2xl p-5">
             <h2 className="text-lg font-bold tracking-tight">Live highlight</h2>
@@ -420,20 +366,74 @@ export default function AdminPanel() {
               Broadcasts instantly to the event's detail page via Supabase Realtime.
             </p>
             <div className="mt-4 space-y-3">
-              <select
-                value={hiForm.event_id}
-                onChange={(e) => setHiForm((f) => ({ ...f, event_id: e.target.value }))}
-                className={input}
-              >
-                <option value="" className={optionCls}>
-                  Choose an event
-                </option>
-                {events.map((e) => (
-                  <option key={e.id} value={e.id} className={optionCls}>
-                    {e.title}
-                  </option>
-                ))}
-              </select>
+              {hiForm.event_id ? (
+                <div className="flex items-center justify-between gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-100">
+                      {events.find((e) => e.id === hiForm.event_id)?.title ?? "Choose an event"}
+                    </p>
+                    <p className="truncate text-xs text-slate-500">
+                      {events.find((e) => e.id === hiForm.event_id)?.starts_at
+                        ? new Date(events.find((e) => e.id === hiForm.event_id)!.starts_at!).toLocaleString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                          })
+                        : "Date TBD"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setHiForm((f) => ({ ...f, event_id: "" }));
+                      setEventQuery("");
+                    }}
+                    className="rounded-lg px-2 py-1 text-xs font-bold text-slate-400 hover:bg-white/5 hover:text-white"
+                  >
+                    Change
+                  </button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <input
+                    value={eventQuery}
+                    onChange={(e) => setEventQuery(e.target.value)}
+                    placeholder="Search event…"
+                    className={input}
+                    autoFocus
+                  />
+                  {eventQuery.trim() && (
+                    <div className="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded-xl border border-white/10 bg-(--bg-page) p-1 shadow-lg">
+                      {eventSuggestions.length === 0 ? (
+                        <p className="px-3 py-2 text-sm text-slate-500">
+                          No events match “{eventQuery.trim()}”.
+                        </p>
+                      ) : (
+                        eventSuggestions.map((e) => (
+                          <button
+                            key={e.id}
+                            onClick={() => {
+                              setHiForm((f) => ({ ...f, event_id: e.id }));
+                              setEventQuery("");
+                            }}
+                            className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left hover:bg-white/5"
+                          >
+                            <span className="min-w-0 truncate text-sm font-medium text-slate-100">
+                              {e.title}
+                            </span>
+                            <span className="shrink-0 text-xs text-slate-500">
+                              {e.starts_at
+                                ? new Date(e.starts_at).toLocaleDateString(undefined, {
+                                    month: "short",
+                                    day: "numeric",
+                                  })
+                                : "Date TBD"}
+                            </span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
               <textarea
                 value={hiForm.body}
                 onChange={(e) => setHiForm((f) => ({ ...f, body: e.target.value }))}
@@ -536,66 +536,66 @@ export default function AdminPanel() {
           <section className="card card-ring rounded-2xl p-5">
             <h2 className="text-lg font-bold tracking-tight">Teachers</h2>
             <p className="mt-1 text-xs text-slate-500">
-              Search for a user by name or email and promote them as a teacher.
+              All teachers here can post events and broadcast highlights. Search to promote a
+              student.
             </p>
             <div className="mt-4">
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search name or email…"
+                placeholder="Search name or email to promote…"
                 className={input}
               />
             </div>
-            <div className="mt-4 space-y-2">
-              {!search.trim() ? (
-                <p className="text-sm text-slate-500">Start typing to find a user to promote.</p>
-              ) : matches.length === 0 ? (
-                <p className="text-sm text-slate-500">No users match “{search.trim()}”.</p>
-              ) : (
-                matches.map((p) => {
-                  const actionable = p.role !== "admin" && p.id !== user?.id;
-                  return (
-                    <div
+
+            {!search.trim() ? (
+              <div className="mt-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  All teachers ({teachers.length})
+                </h3>
+                <div className="mt-2 space-y-2">
+                  {teachers.length === 0 ? (
+                    <p className="text-sm text-slate-500">
+                      No teachers yet — search above and promote someone.
+                    </p>
+                  ) : (
+                    teachers.map((p) => (
+                      <TeacherRow
+                        key={p.id}
+                        profile={p}
+                        currentUserId={user?.id}
+                        busy={roleBusy === p.id}
+                        onFlip={() => flipRole(p)}
+                      />
+                    ))
+                  )}
+                </div>
+              </div>
+            ) : matches.length === 0 ? (
+              <div className="mt-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Search results ({matches.length})
+                </h3>
+                <p className="mt-2 text-sm text-slate-500">No users match “{search.trim()}”.</p>
+              </div>
+            ) : (
+              <div className="mt-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Search results ({matches.length})
+                </h3>
+                <div className="mt-2 space-y-2">
+                  {matches.map((p) => (
+                    <TeacherRow
                       key={p.id}
-                      className="flex items-center justify-between gap-3 rounded-xl bg-white/5 px-3 py-2 ring-1 ring-white/10"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-slate-200">
-                          {p.full_name || "Unnamed"}
-                        </p>
-                        <p className="truncate text-xs text-slate-500">{p.email}</p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 ${
-                            p.role === "admin"
-                              ? "bg-amber-400/15 text-amber-300 ring-amber-400/30"
-                              : p.role === "teacher"
-                                ? "bg-indigo-400/15 text-indigo-300 ring-indigo-400/30"
-                                : "bg-white/5 text-slate-400 ring-white/10"
-                          }`}
-                        >
-                          {p.role}
-                        </span>
-                        {actionable && (
-                          <button
-                            onClick={() => flipRole(p)}
-                            disabled={roleBusy === p.id}
-                            className="rounded-lg border border-white/15 px-2 py-1 text-xs font-semibold text-slate-300 transition-colors hover:bg-white/5 disabled:opacity-50"
-                          >
-                            {roleBusy === p.id
-                              ? "…"
-                              : p.role === "teacher"
-                                ? "Demote"
-                                : "Promote"}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
+                      profile={p}
+                      currentUserId={user?.id}
+                      busy={roleBusy === p.id}
+                      onFlip={() => flipRole(p)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
         )}
       </div>
@@ -613,6 +613,51 @@ export default function AdminPanel() {
         />
       )}
     </Guard>
+  );
+}
+
+function TeacherRow({
+  profile,
+  currentUserId,
+  busy,
+  onFlip,
+}: {
+  profile: ProfileRow;
+  currentUserId?: string;
+  busy: boolean;
+  onFlip: () => void;
+}) {
+  const p = profile;
+  const actionable = p.role !== "admin" && p.id !== currentUserId;
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl bg-white/5 px-3 py-2 ring-1 ring-white/10">
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium text-slate-200">{p.full_name || "Unnamed"}</p>
+        <p className="truncate text-xs text-slate-500">{p.email}</p>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <span
+          className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 ${
+            p.role === "admin"
+              ? "bg-amber-400/15 text-amber-300 ring-amber-400/30"
+              : p.role === "teacher"
+                ? "bg-indigo-400/15 text-indigo-300 ring-indigo-400/30"
+                : "bg-white/5 text-slate-400 ring-white/10"
+          }`}
+        >
+          {p.role}
+        </span>
+        {actionable && (
+          <button
+            onClick={onFlip}
+            disabled={busy}
+            className="rounded-lg border border-white/15 px-2 py-1 text-xs font-semibold text-slate-300 transition-colors hover:bg-white/5 disabled:opacity-50"
+          >
+            {busy ? "…" : p.role === "teacher" ? "Demote" : "Promote"}
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -640,6 +685,8 @@ function EventModal({
           image_url: event.image_url ?? "",
           is_ticketed: event.is_ticketed,
           ticket_price: String(event.ticket_price),
+          registrations_enabled: event.registrations_enabled !== false,
+          show_registration_count: event.show_registration_count !== false,
         }
       : emptyForm
   );
@@ -663,6 +710,8 @@ function EventModal({
         image_url: form.image_url || null,
         is_ticketed: form.is_ticketed,
         ticket_price: Number(form.ticket_price) || 0,
+        registrations_enabled: form.registrations_enabled,
+        show_registration_count: form.show_registration_count,
         id: event?.id,
       });
       await onDone();
@@ -783,6 +832,45 @@ function EventModal({
                 />
               </div>
             )}
+          </div>
+          <div className="flex items-center gap-3 sm:col-span-2">
+            <input
+              type="checkbox"
+              checked={form.registrations_enabled}
+              onChange={(e) => set("registrations_enabled", e.target.checked)}
+              className="h-4 w-4 accent-indigo-500"
+            />
+            <div>
+              <label className="text-sm font-semibold text-slate-300">Enable registrations</label>
+              <p className="text-xs text-slate-500">
+                Turn off to post it as a plain announcement — no one can register.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 sm:col-span-2">
+            <span className="text-sm font-semibold text-slate-300">Show registration count</span>
+            <div className="flex rounded-lg border border-white/15 p-0.5">
+              <button
+                onClick={() => set("show_registration_count", true)}
+                className={`rounded-md px-4 py-1.5 text-sm font-semibold transition-colors ${
+                  form.show_registration_count
+                    ? "bg-emerald-500/20 text-emerald-300"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                Yes
+              </button>
+              <button
+                onClick={() => set("show_registration_count", false)}
+                className={`rounded-md px-4 py-1.5 text-sm font-semibold transition-colors ${
+                  !form.show_registration_count
+                    ? "bg-rose-500/20 text-rose-300"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                No
+              </button>
+            </div>
           </div>
         </div>
         <div className="mt-6 flex justify-end gap-2">

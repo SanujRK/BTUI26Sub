@@ -9,6 +9,8 @@ truncate table public.registrations, public.tickets, public.custom_events,
      public.highlights, public.announcements, public.events cascade;
 
 -- Events (all dates relative to "now" so the demo always looks current)
+-- Every event doubles as an announcement: schema.sql's sync trigger mirrors
+-- each row into the announcements feed automatically.
 insert into public.events (title, description, starts_at, ends_at, venue, category, capacity, is_ticketed, ticket_price, created_by)
 select seed.title, seed.description, seed.starts_at, seed.ends_at, seed.venue, seed.category,
        seed.capacity, seed.is_ticketed, seed.ticket_price, a.id
@@ -69,33 +71,9 @@ from (values
 cross join public.profiles a
 where a.email = 'admin@admin.com';
 
--- Announcements (author is free text; event_id linked where relevant)
-insert into public.announcements (title, body, author, event_id)
-select seed.title, seed.body, seed.author, e.id
-from (values
-  ('Assembly on Friday',
-   'Full-school assembly at 8:00 sharp in the Main Hall. House points announced.',
-   'Ms. Nair', null),
-  ('Hack the Code Sprint — teams needed',
-   'We still need three teams of four. Last week to sign up, prizes plus a field trip for the winners.',
-   'Mr. Pinto', 'Hack the Code Sprint'),
-  ('Mock UN — country assignments out',
-   'Head over to the event page; pitch to argue for a country before registration closes.',
-   'Mr. Pinto', 'Mock UN Session'),
-  ('Concert tickets now on sale',
-   'Tickets are live. Grab one early — the hall always sells out.',
-   'Ms. Nair', 'Winter Music Concert'),
-  ('Battlebot Brawl — last bot confirmed',
-   'Fight night locked in. Come watch the arena duels in the Workshop Shed.',
-   'Mr. Pinto', 'Battlebot Brawl'),
-  ('Term 2 begins Monday',
-   'Books and timetables are on the portal. New arrivals report to the office.',
-   'School Office', null),
-  ('Science Exhibition volunteers',
-   'Volunteer for the expo and get a first look before doors open.',
-   'Ms. D''Souza', 'Science Exhibition 2026')
-) as seed(title, body, author, event_title)
-left join public.events e on e.title = seed.event_title;
+-- The open house announces but takes no registrations; chess keeps its sign-ups private
+update public.events set registrations_enabled = false where title = 'Parent-Teacher Open House';
+update public.events set show_registration_count = false where title = 'Chess Rapid Round-Robin';
 
 -- Highlights (broadcast-style updates for the live feeds)
 insert into public.highlights (event_id, body, created_at)
@@ -119,8 +97,7 @@ where (p.email = 'test@test.com' and e.title in (
   'Mock UN Session', 'Science Exhibition 2026'
 ))
 or (p.email = 'test2@test.com' and e.title in (
-  'Half-Yearly Quiz Bowl', 'Battlebot Brawl', 'Mock UN Session',
-  'Art & Craft Mela', 'Parent-Teacher Open House'
+  'Half-Yearly Quiz Bowl', 'Battlebot Brawl', 'Mock UN Session', 'Art & Craft Mela'
 ))
 on conflict (event_id, user_id) do nothing;
 
