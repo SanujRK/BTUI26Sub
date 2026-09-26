@@ -230,6 +230,9 @@ export default function EventCalendar() {
 
   const showPool = !!user && poolToShow.length > 0;
 
+  const emptyCalendar =
+    officialEvents.length === 0 && reminderEvents.length === 0;
+
   return (
     <div className="flex flex-col gap-4">
       {flash && (
@@ -241,6 +244,16 @@ export default function EventCalendar() {
         >
           {flash.msg} <span className="opacity-70">(click to dismiss)</span>
         </p>
+      )}
+      {emptyCalendar && (
+        <div className="card card-ring rounded-2xl p-6 text-center">
+          <p className="font-semibold text-slate-200">Your calendar is clear</p>
+          <p className="mt-1 text-sm text-slate-500">
+            {user
+              ? "Once you register for an event or pin a reminder with +, it appears here. Events with a TBD date show up after they're scheduled."
+              : "Sign in to build your personal calendar — register for events and pin reminders."}
+          </p>
+        </div>
       )}
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex gap-2">
