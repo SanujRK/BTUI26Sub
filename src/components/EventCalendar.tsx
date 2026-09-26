@@ -310,11 +310,12 @@ export default function EventCalendar() {
           <FullCalendar
             ref={calendarRef}
             plugins={[dayGridPlugin, listPlugin, interactionPlugin]}
-            initialView={isMobile ? "listMonth" : "dayGridMonth"}
+initialView={isMobile ? "listMonth" : "dayGridMonth"}
             firstDay={1}
             fixedWeekCount={false}
-            events={[...officialEvents, ...reminderEvents]}
-            dayMaxEventRows={3}
+            expandRows
+            height={isMobile ? "70vh" : "auto"}
+            dayMaxEventRows={isMobile ? 4 : 3}
             height="auto"
             droppable
             editable
