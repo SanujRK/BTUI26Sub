@@ -68,17 +68,12 @@ export default function EventCalendar() {
   const [category, setCategory] = useState("");
   const [flash, setFlash] = useState<{ msg: string; ok: boolean } | null>(null);
 
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile =
+    typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
 
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    const update = () => setIsMobile(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-
-  const [view, setView] = useState<string>("dayGridMonth");
+  const [view, setView] = useState<string>(() =>
+    isMobile ? "listMonth" : "dayGridMonth"
+  );
 
   useEffect(() => {
     getEvents()
@@ -94,8 +89,8 @@ export default function EventCalendar() {
         })
         .catch((err) => setError(err.message));
     } else {
-      setPool([]);
       setMyRegs([]);
+      setPool([]);
       setTickets([]);
     }
     setLoading(false);
@@ -230,9 +225,6 @@ export default function EventCalendar() {
 
   const showPool = !!user && poolToShow.length > 0;
 
-  const emptyCalendar =
-    officialEvents.length === 0 && reminderEvents.length === 0;
-
   return (
     <div className="flex flex-col gap-4">
       {flash && (
@@ -245,23 +237,13 @@ export default function EventCalendar() {
           {flash.msg} <span className="opacity-70">(click to dismiss)</span>
         </p>
       )}
-      {emptyCalendar && (
-        <div className="card card-ring rounded-2xl p-6 text-center">
-          <p className="font-semibold text-slate-200">Your calendar is clear</p>
-          <p className="mt-1 text-sm text-slate-500">
-            {user
-              ? "Once you register for an event or pin a reminder with +, it appears here. Events with a TBD date show up after they're scheduled."
-              : "Sign in to build your personal calendar — register for events and pin reminders."}
-          </p>
-        </div>
-      )}
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex gap-2">
           {(["dayGridMonth", "listMonth"] as const).map((v) => (
             <button
               key={v}
               onClick={() => setView(v)}
-              className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors sm:py-1.5 ${
+              className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
                 view === v
                   ? "bg-indigo-600 text-white"
                   : "border border-white/15 text-slate-300 hover:bg-white/5"
@@ -274,7 +256,7 @@ export default function EventCalendar() {
         {user && (
           <button
             onClick={() => setModal({ kind: "create", start: new Date().toISOString() })}
-            className="rounded-lg bg-indigo-600 px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 sm:py-1.5"
+            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
           >
             + Custom reminder
           </button>
@@ -328,12 +310,11 @@ export default function EventCalendar() {
           <FullCalendar
             ref={calendarRef}
             plugins={[dayGridPlugin, listPlugin, interactionPlugin]}
-initialView="dayGridMonth"
+            initialView="dayGridMonth"
             firstDay={1}
-            fixedWeekCount={false}
-            expandRows
-            height={isMobile ? "70vh" : "auto"}
-            dayMaxEventRows={isMobile ? 4 : 6}
+            events={[...officialEvents, ...reminderEvents]}
+            dayMaxEventRows={3}
+            height="auto"
             droppable
             editable
             selectable
@@ -608,7 +589,7 @@ function CustomModal({
             />
           </div>
         )}
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="mt-4 grid grid-cols-2 gap-3">
           <div>
             <label className="text-sm font-semibold text-slate-400">Time</label>
             <input
@@ -665,7 +646,7 @@ function CustomModal({
             {errorMsg}
           </p>
         )}
-        <div className="mt-6 flex flex-wrap justify-end gap-2">
+        <div className="mt-6 flex justify-end gap-2">
           {onDelete && (
             <button
               onClick={() => onDelete()}
