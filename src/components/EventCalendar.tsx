@@ -68,12 +68,17 @@ export default function EventCalendar() {
   const [category, setCategory] = useState("");
   const [flash, setFlash] = useState<{ msg: string; ok: boolean } | null>(null);
 
-  const isMobile =
-    typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+  const [isMobile, setIsMobile] = useState(false);
 
-  const [view, setView] = useState<string>(() =>
-    isMobile ? "listMonth" : "dayGridMonth"
-  );
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  const [view, setView] = useState<string>("dayGridMonth");
 
   useEffect(() => {
     getEvents()
@@ -310,13 +315,12 @@ export default function EventCalendar() {
           <FullCalendar
             ref={calendarRef}
             plugins={[dayGridPlugin, listPlugin, interactionPlugin]}
-initialView={isMobile ? "listMonth" : "dayGridMonth"}
+initialView="dayGridMonth"
             firstDay={1}
             fixedWeekCount={false}
             expandRows
             height={isMobile ? "70vh" : "auto"}
             dayMaxEventRows={isMobile ? 4 : 3}
-            height="auto"
             droppable
             editable
             selectable
