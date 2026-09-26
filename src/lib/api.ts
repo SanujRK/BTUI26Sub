@@ -153,6 +153,8 @@ export type Highlight = {
   id: string;
   body: string;
   created_at: string;
+  event_id: string | null;
+  event_title: string | null;
 };
 
 export async function getHighlights(eventId: string): Promise<Highlight[]> {
@@ -164,7 +166,7 @@ export async function getHighlights(eventId: string): Promise<Highlight[]> {
     .eq("event_id", eventId)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []) as Highlight[];
 }
 
 export function subscribeToHighlights(
@@ -183,6 +185,22 @@ export function subscribeToHighlights(
         table: "highlights",
         filter: `event_id=eq.${eventId}`,
       },
+      (payload) => onNew(payload.new as Highlight)
+    )
+    .subscribe();
+  return () => {
+    client.removeChannel(channel);
+  };
+}
+
+export function subscribeToAllHighlights(onNew: (highlight: Highlight) => void): () => void {
+  if (!isSupabaseConfigured) return () => undefined;
+  const client = requireClient();
+  const channel = client
+    .channel("highlights:all")
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "highlights" },
       (payload) => onNew(payload.new as Highlight)
     )
     .subscribe();
@@ -423,11 +441,17 @@ export async function getRecentHighlights(limit = 10): Promise<Highlight[]> {
   const client = requireClient();
   const { data, error } = await client
     .from("highlights")
-    .select("id, body, created_at")
+    .select("id, body, created_at, event_id, events(title)")
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    body: row.body,
+    created_at: row.created_at,
+    event_id: row.event_id,
+    event_title: row.events?.title ?? null,
+  }));
 }
 
 export type ProfileRow = {

@@ -6,12 +6,15 @@ import {
   getCustomEvents,
   getEvents,
   getMyTickets,
+  getRecentHighlights,
   buyTicket,
   createCustomEvent,
+  subscribeToAllHighlights,
   type MyRegistration,
   type EventView,
   type CustomEventRow,
   type TicketView,
+  type Highlight,
 } from "../lib/api";
 import { formatDate } from "../lib/format";
 import { categoryClass } from "../lib/categories";
@@ -39,6 +42,16 @@ function greetingFor(hour: number, firstName: string) {
 
 const timeStr = (iso: string) =>
   new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+
+function timeAgo(iso: string) {
+  const s = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
 
 function Countdown({ at }: { at: string }) {
   const [now, setNow] = useState(() => Date.now());
@@ -70,6 +83,27 @@ export default function DashboardPage() {
   const [expanded, setExpanded] = useState(false);
   const [ticketMsg, setTicketMsg] = useState("");
   const [ticketBusy, setTicketBusy] = useState("");
+  const [highlights, setHighlights] = useState<Highlight[]>([]);
+
+  useEffect(() => {
+    let alive = true;
+    getRecentHighlights(8)
+      .then((h) => alive && setHighlights(h))
+      .catch(() => undefined);
+    const unsub = subscribeToAllHighlights((h) =>
+      setHighlights((prev) => [h, ...prev].slice(0, 8))
+    );
+    return () => {
+      alive = false;
+      unsub();
+    };
+  }, []);
+
+  const [, setMinutesTick] = useState(0);
+  useEffect(() => {
+    const t = window.setInterval(() => setMinutesTick((n) => n + 1), 60000);
+    return () => window.clearInterval(t);
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -343,6 +377,58 @@ export default function DashboardPage() {
             </button>
           )}
         </div>
+      </section>
+
+      <section>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-bold tracking-tight">Live updates</h2>
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-300">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            LIVE
+          </span>
+        </div>
+        {highlights.length === 0 ? (
+          <p className="text-slate-500">No live updates yet.</p>
+        ) : (
+          <div className="overflow-hidden rounded-xl ring-1 ring-white/10">
+            {highlights.map((h, i) => {
+              const row = (
+                <div className="flex items-start gap-3 px-4 py-3">
+                  <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-emerald-400" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-slate-200">{h.body}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {h.event_title && (
+                        <span className="font-semibold text-indigo-300">{h.event_title}</span>
+                      )}
+                      {h.event_title && <span> · </span>}
+                      {timeAgo(h.created_at)}
+                    </p>
+                  </div>
+                </div>
+              );
+              return (
+                <div
+                  key={h.id}
+                  className={
+                    i % 2 === 0 ? "bg-white/[0.05]" : "bg-white/[0.02]"
+                  }
+                >
+                  {h.event_id ? (
+                    <a href={`/event?id=${h.event_id}`} className="block transition-colors hover:bg-white/[0.08]">
+                      {row}
+                    </a>
+                  ) : (
+                    row
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       <section>
