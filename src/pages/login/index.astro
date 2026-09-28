@@ -1,0 +1,10 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import AuthForm from "../../components/AuthForm";
+---
+
+<Layout title="Sign in — School Events Hub">
+  <section class="flex justify-center py-8">
+    <AuthForm client:load />
+  </section>
+</Layout>

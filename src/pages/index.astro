@@ -1,0 +1,28 @@
+---
+import Layout from "../layouts/Layout.astro";
+import HomeFeed from "../components/HomeFeed";
+import HomeRegistrations from "../components/HomeRegistrations";
+import RedirectIfSignedIn from "../components/RedirectIfSignedIn";
+---
+
+<Layout title="School Events Hub">
+  <RedirectIfSignedIn client:load />
+  <section class="py-6 text-center">
+    <h1 class="mx-auto max-w-2xl text-4xl font-black tracking-tight sm:text-5xl">
+      Every school event.
+      <span class="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">
+        One command center.
+      </span>
+    </h1>
+    <p class="mx-auto mt-3 max-w-xl text-slate-400">
+      Announcements, calendars, registrations, and tickets for every debate,
+      meet, and exhibition this year — with live updates as they happen.
+    </p>
+  </section>
+
+  <HomeFeed client:load />
+
+  <section>
+    <HomeRegistrations client:load />
+  </section>
+</Layout>

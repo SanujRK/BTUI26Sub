@@ -1,0 +1,15 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import EventCalendar from "../../components/EventCalendar";
+---
+
+<Layout title="Calendar — School Events Hub">
+  <section class="mb-8">
+    <h1 class="text-3xl font-black tracking-tight">Event calendar</h1>
+    <p class="mt-2 text-slate-400">
+      Every event this year on one board. Tap an event to see details and register.
+    </p>
+  </section>
+
+  <EventCalendar client:load />
+</Layout>

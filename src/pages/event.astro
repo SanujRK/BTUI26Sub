@@ -1,0 +1,11 @@
+---
+import Layout from "../layouts/Layout.astro";
+import EventDetail from "../components/EventDetail";
+
+const title = "Event — School Events Hub";
+const description = "Event details, live highlights, and registration.";
+---
+
+<Layout title={title} description={description}>
+  <EventDetail client:load />
+</Layout>

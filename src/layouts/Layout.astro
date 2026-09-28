@@ -1,0 +1,67 @@
+---
+import "../styles/global.css";
+import AuthNav from "../components/AuthNav";
+import MobileMenu from "../components/MobileMenu";
+import NavLinks from "../components/NavLinks";
+import ThemeApplier from "../components/ThemeApplier";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "School Events Hub",
+  description = "Every school event. One place.",
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <ThemeApplier client:load />
+    <div class="lg:grid lg:grid-cols-[var(--rail-w)_1fr]">
+      <aside class="relative hidden lg:flex lg:h-dvh lg:flex-col lg:gap-6 lg:px-4 lg:py-5 lg:sticky lg:top-0">
+        <span aria-hidden="true" class="nav-separator pointer-events-none absolute inset-y-0 right-0 w-px"></span>
+        <a href="/" class="flex min-w-0 items-center gap-2 font-bold tracking-tight">
+          <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-sm font-black text-white">
+            SEH
+          </span>
+          <span class="min-w-0 truncate text-sm text-slate-100">School Events Hub</span>
+        </a>
+        <NavLinks client:load variant="sidebar" />
+        <div class="mt-auto">
+          <AuthNav client:load />
+        </div>
+      </aside>
+
+      <div class="flex min-w-0 flex-col">
+        <header class="app-header sticky top-0 z-50 border-b border-white/10 backdrop-blur lg:hidden">
+          <nav class="flex items-center justify-between gap-2 px-4 py-3">
+            <a href="/" class="flex min-w-0 shrink-0 items-center gap-2 font-bold tracking-tight">
+              <span class="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-sm font-black text-white">
+                SEH
+              </span>
+              <span class="hidden truncate text-slate-100 sm:inline">School Events Hub</span>
+            </a>
+            <div class="flex shrink-0 items-center gap-2">
+              <AuthNav client:load compact />
+              <MobileMenu client:load />
+            </div>
+          </nav>
+        </header>
+
+        <main class="flex-1 px-4 py-8 lg:px-8">
+          <slot />
+        </main>
+      </div>
+    </div>
+  </body>
+</html>
